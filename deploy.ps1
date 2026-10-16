@@ -13,9 +13,17 @@
     arguments through. If the source repo is missing (moved/deleted), it warns and
     runs whatever is already deployed instead.
 
+    Also publishes UnstuckTaskbar (the tray app + global hotkey, UNS-T2) into the same
+    C:\Apps\Unstuck\ folder as C:\Apps\Unstuck\UnstuckTaskbar.exe - a framework-dependent
+    single-file build (same flags as Automata/KdpPublish's deploy.ps1). This does not touch
+    deploy.bat or the plain script/icon copy above: the existing desktop shortcut keeps
+    running the one-shot recovery exactly as before: UnstuckTaskbar.exe is just an
+    additional file dropped alongside it.
+
     Without -Force it only redeploys when the deployed script, icon or deploy.bat is
     missing, or the source is newer than the deployed copy, so the per-launch call
-    from deploy.bat is a fast no-op.
+    from deploy.bat is a fast no-op. Same staleness logic, separately, for
+    UnstuckTaskbar.exe against its own project sources.
 
 .PARAMETER Force
     Redeploy even if nothing looks changed.
@@ -45,6 +53,11 @@ $deployScript = Join-Path $out 'unstuck.ps1'
 $deployIcon   = Join-Path $out 'logo.ico'
 $bat          = Join-Path $out 'deploy.bat'
 
+$taskbarProj = Join-Path $repoDir 'UnstuckTaskbar\UnstuckTaskbar.csproj'
+$taskbarDir  = Join-Path $repoDir 'UnstuckTaskbar'
+$taskbarExe  = Join-Path $out 'UnstuckTaskbar.exe'
+$taskbarSourceExt = @('.cs', '.csproj', '.xaml', '.json', '.props', '.targets', '.resx', '.ico')
+
 function Test-NeedsDeploy {
     if (-not (Test-Path $deployScript)) { return $true }
     if (-not (Test-Path $deployIcon)) { return $true }
@@ -53,6 +66,20 @@ function Test-NeedsDeploy {
     if ((Get-Item $srcScript).LastWriteTimeUtc -gt $deployedTime) { return $true }
     if ((Test-Path $srcIcon) -and (Get-Item $srcIcon).LastWriteTimeUtc -gt $deployedTime) { return $true }
     return $false
+}
+
+function Test-TaskbarNeedsPublish {
+    if ($Force -or -not (Test-Path $taskbarExe)) { return $true }
+    $exeTime = (Get-Item $taskbarExe).LastWriteTimeUtc
+    $props = Join-Path $repoDir 'Directory.Build.props'
+    if ((Test-Path $props) -and (Get-Item $props).LastWriteTimeUtc -gt $exeTime) { return $true }
+    $newer = Get-ChildItem -Path $taskbarDir -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.FullName -notmatch '\\(bin|obj)\\' -and
+            ($taskbarSourceExt -contains $_.Extension.ToLowerInvariant()) -and
+            $_.LastWriteTimeUtc -gt $exeTime
+        } | Select-Object -First 1
+    return [bool]$newer
 }
 
 New-Item -ItemType Directory -Force -Path $out | Out-Null
@@ -82,6 +109,25 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0unstuck.ps1" %*
     Write-Host '  Deployed successfully.' -ForegroundColor Green
     Write-Host "    Script : $deployScript" -ForegroundColor Gray
     Write-Host "    Launch : $bat" -ForegroundColor Gray
+}
+
+if (-not (Test-TaskbarNeedsPublish)) {
+    Write-Host '  UnstuckTaskbar is up to date - nothing to publish.' -ForegroundColor DarkGray
+} else {
+    Get-Process 'UnstuckTaskbar' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Write-Host "  Publishing UnstuckTaskbar -> $taskbarExe" -ForegroundColor Cyan
+    dotnet publish $taskbarProj `
+        --configuration Release `
+        --runtime win-x64 `
+        --self-contained false `
+        /p:PublishSingleFile=true `
+        /p:IncludeNativeLibrariesForSelfExtract=true `
+        --output $out | Out-Host
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $taskbarExe)) {
+        Write-Host 'Publishing UnstuckTaskbar FAILED.' -ForegroundColor Red
+    } else {
+        Write-Host "  Published $taskbarExe" -ForegroundColor Green
+    }
 }
 
 if ($Launch) {

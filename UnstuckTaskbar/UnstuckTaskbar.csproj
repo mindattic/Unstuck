@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- Only for the tray icon (NotifyIcon); its implicit usings are removed below so WPF's types stay unambiguous. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>UnstuckTaskbar</RootNamespace>
+    <AssemblyName>UnstuckTaskbar</AssemblyName>
+    <Version>1.0.0</Version>
+    <!-- The exe's own icon: Explorer, the shortcuts and the tray all show it. -->
+    <ApplicationIcon>..\assets\logo.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The same icon for the tray balloon/context. -->
+    <Resource Include="..\assets\logo.ico" Link="logo.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MindAttic.Vault" Version="6.0.0" />
+    <PackageReference Include="MindAttic.Components.Wpf" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnstuckTaskbar.Tests" />
+  </ItemGroup>
+
+</Project>

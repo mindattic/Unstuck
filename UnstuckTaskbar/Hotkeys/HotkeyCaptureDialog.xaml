@@ -1,0 +1,21 @@
+<Window x:Class="UnstuckTaskbar.Hotkeys.HotkeyCaptureDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Change Unstuck Hotkey" Width="360" SizeToContent="Height"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        ShowInTaskbar="False" Topmost="True">
+    <StackPanel Margin="20">
+        <TextBlock Text="Press the key combination you want, including a media key."
+                   TextWrapping="Wrap" Margin="0,0,0,12" />
+        <TextBox x:Name="CaptureBox" IsReadOnly="True" Focusable="True"
+                 Text="Press a key combination..." FontSize="16" Padding="8"
+                 HorizontalContentAlignment="Center"
+                 PreviewKeyDown="CaptureBox_PreviewKeyDown" />
+        <TextBlock x:Name="WarningText" Foreground="#FFFF7A7D" Margin="0,8,0,0"
+                   TextWrapping="Wrap" Visibility="Collapsed" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Cancel" Width="80" Margin="0,0,8,0" Click="Cancel_Click" IsCancel="True" />
+            <Button x:Name="SaveButton" Content="Save" Width="80" Click="Save_Click" IsEnabled="False" IsDefault="True" />
+        </StackPanel>
+    </StackPanel>
+</Window>

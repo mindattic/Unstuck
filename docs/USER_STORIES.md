@@ -24,3 +24,4 @@ _Nothing recorded yet._
 | UNS-T1 | 2026-10-16 | docs | closed | Start the permanent ticket log in the workflow database | — |
 | UNS-T2 | 2026-10-16 | feature | closed | Canonicalize unstuck.ps1 + the /unstuck command in this repo (global ~/.claude copies become forwarders) and add UnstuckTaskbar, a tray app with an assignable global hotkey (incl. media keys) that fires it | dotnet test: 26/26 passed; deploy.ps1 verified (C:\Apps\Unstuck\UnstuckTaskbar.exe built, deploy.bat/unstuck.ps1 unaffected); tray app launched live, single-instance mutex guard confirmed, logon scheduled task + Start Menu shortcut self-registered |
 | UNS-T3 | 2026-10-16 | chore | closed | Add deploy.ps1/deploy.bat packaging to C:\Apps\Unstuck and a desktop shortcut | user request |
+| UNS-T4 | 2026-10-16 | chore | closed | Add assets, commands, unstuck.ps1 | — |

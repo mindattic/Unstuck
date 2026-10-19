@@ -111,9 +111,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0unstuck.ps1" %*
     Write-Host "    Launch : $bat" -ForegroundColor Gray
 }
 
+$failed = $false
 if (-not (Test-TaskbarNeedsPublish)) {
     Write-Host '  UnstuckTaskbar is up to date - nothing to publish.' -ForegroundColor DarkGray
 } else {
+    # The running tray app locks its exe; stop it, and start it again afterwards so a redeploy
+    # (which deploy.bat triggers on every double-click) doesn't leave the hotkey dead until next logon.
+    $wasRunning = @(Get-Process 'UnstuckTaskbar' -ErrorAction SilentlyContinue).Count -gt 0
     Get-Process 'UnstuckTaskbar' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Write-Host "  Publishing UnstuckTaskbar -> $taskbarExe" -ForegroundColor Cyan
     dotnet publish $taskbarProj `
@@ -125,9 +129,11 @@ if (-not (Test-TaskbarNeedsPublish)) {
         --output $out | Out-Host
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path $taskbarExe)) {
         Write-Host 'Publishing UnstuckTaskbar FAILED.' -ForegroundColor Red
+        $failed = $true
     } else {
         Write-Host "  Published $taskbarExe" -ForegroundColor Green
     }
+    if ($wasRunning -and (Test-Path $taskbarExe)) { Start-Process -FilePath $taskbarExe -WorkingDirectory $out }
 }
 
 if ($Launch) {
@@ -138,4 +144,5 @@ if ($Launch) {
     Write-Host '  Running...' -ForegroundColor Cyan
     & powershell -NoProfile -ExecutionPolicy Bypass -File $deployScript @LaunchArgs
 }
+if ($failed) { exit 1 }
 exit 0

@@ -26,8 +26,14 @@ public readonly record struct HotkeyGesture(ModifierKeys Modifiers, Key Key)
         (ModifierKeys.Windows, "Win"),
     ];
 
-    /// <summary>A key alone is only valid for keys with no default system meaning, e.g. a media key.</summary>
-    public bool IsValid => Key != Key.None && Key != Key.System;
+    /// <summary>A key alone is only valid for keys with no default system meaning, e.g. a media key —
+    /// a bare letter or F5 would be swallowed system-wide.</summary>
+    public bool IsValid => Key is not (Key.None or Key.System) && (Modifiers != ModifierKeys.None || IsStandaloneKey(Key));
+
+    private static bool IsStandaloneKey(Key key) =>
+        key is Key.MediaPlayPause or Key.MediaNextTrack or Key.MediaPreviousTrack or Key.MediaStop
+            or Key.VolumeMute or Key.VolumeUp or Key.VolumeDown
+            or >= Key.F13 and <= Key.F24;
 
     /// <summary>The stable form persisted to settings.json, e.g. "Control+Alt+U" or "MediaPlayPause".</summary>
     public string ToSettingsString()

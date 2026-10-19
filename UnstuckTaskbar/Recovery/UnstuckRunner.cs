@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 
@@ -16,7 +17,8 @@ public sealed class UnstuckRunner
     private static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(2);
     private const int MaxSummaryLength = 240;
 
-    private DateTime? lastRunUtc;
+    private bool running;
+    private DateTime? lastFinishedUtc;
 
     /// <summary>
     /// UnstuckTaskbar.exe only ever runs from its deployed location (<c>C:\Apps\Unstuck\</c>), where
@@ -24,14 +26,28 @@ public sealed class UnstuckRunner
     /// </summary>
     public static string ScriptPath => Path.Combine(AppContext.BaseDirectory, "unstuck.ps1");
 
-    /// <summary>Runs the recovery, or returns null if a run completed less than <see cref="Cooldown"/> ago
-    /// (guards against a mashed or OS-repeated hotkey stacking powershell.exe processes).</summary>
-    public RecoveryResult? Run()
+    /// <summary>
+    /// Runs the recovery off the calling thread (the script takes several seconds; blocking the UI
+    /// thread would freeze the tray and queue up WM_HOTKEY presses). Returns null if a run is still
+    /// in progress or finished less than <see cref="Cooldown"/> ago, so a mashed hotkey can't stack runs.
+    /// Call from a single thread (the UI thread).
+    /// </summary>
+    public async Task<RecoveryResult?> RunAsync()
     {
-        var now = DateTime.UtcNow;
-        if (lastRunUtc is { } last && now - last < Cooldown) return null;
-        lastRunUtc = now;
+        if (running) return null;
+        if (lastFinishedUtc is { } last && DateTime.UtcNow - last < Cooldown) return null;
 
+        running = true;
+        try { return await Task.Run(RunScript); }
+        finally
+        {
+            running = false;
+            lastFinishedUtc = DateTime.UtcNow;
+        }
+    }
+
+    private static RecoveryResult RunScript()
+    {
         var scriptPath = ScriptPath;
         if (!File.Exists(scriptPath))
             return new RecoveryResult($"unstuck.ps1 not found at {scriptPath} - run deploy.ps1.", RawOutput: "", ExitCode: -1);
@@ -49,12 +65,21 @@ public sealed class UnstuckRunner
         psi.ArgumentList.Add("-File");
         psi.ArgumentList.Add(scriptPath);
 
-        using var process = Process.Start(psi)!;
-        var output = process.StandardOutput.ReadToEnd();
-        process.StandardError.ReadToEnd();
-        process.WaitForExit();
-
-        return new RecoveryResult(ExtractSummary(output), output, process.ExitCode);
+        try
+        {
+            using var process = Process.Start(psi)!;
+            // Drain stderr concurrently: reading the two pipes one after the other deadlocks once the
+            // unread one fills its buffer.
+            var stderr = process.StandardError.ReadToEndAsync();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+            stderr.Wait();
+            return new RecoveryResult(ExtractSummary(output), output, process.ExitCode);
+        }
+        catch (Win32Exception ex)
+        {
+            return new RecoveryResult($"Couldn't start PowerShell: {ex.Message}", RawOutput: "", ExitCode: -1);
+        }
     }
 
     /// <summary>Pure text parsing of unstuck.ps1's own "---- Report ----" section, for the balloon tip.

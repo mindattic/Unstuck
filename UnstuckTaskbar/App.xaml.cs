@@ -2,7 +2,6 @@ using System.Windows;
 using UnstuckTaskbar.Hotkeys;
 using UnstuckTaskbar.Recovery;
 using UnstuckTaskbar.Settings;
-using UnstuckTaskbar.Startup;
 using UnstuckTaskbar.Tray;
 
 namespace UnstuckTaskbar;
@@ -36,16 +35,12 @@ public partial class App : Application
         hotkeyManager = new HotkeyManager();
         trayIcon = new TrayIconService(settingsService, hotkeyManager, runner, exePath);
 
-        hotkeyManager.HotkeyPressed += () =>
-        {
-            var result = runner.Run();
-            if (result is not null) trayIcon.ShowBalloon("Unstuck", result.Summary);
-        };
+        hotkeyManager.HotkeyPressed += trayIcon.RunNow;
 
         if (HotkeyGesture.TryParse(current.HotkeyGesture, out var gesture))
             hotkeyManager.RegisterCurrent(gesture);
 
-        StartupRegistrar.Apply(current.StartWithWindows, exePath);
+        trayIcon.ApplyStartWithWindows(current.StartWithWindows);
     }
 
     protected override void OnExit(ExitEventArgs e)

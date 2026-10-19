@@ -77,12 +77,12 @@ public class UnstuckRunnerTests
     }
 
     [Test]
-    public void Run_applies_a_cooldown_between_triggers()
+    public async Task Run_applies_a_cooldown_between_triggers()
     {
         var runner = new UnstuckRunner();
 
-        var first = runner.Run(); // script won't exist at the test-runner's AppContext.BaseDirectory
-        var second = runner.Run(); // immediate re-trigger within the cooldown window
+        var first = await runner.RunAsync(); // script won't exist at the test-runner's AppContext.BaseDirectory
+        var second = await runner.RunAsync(); // immediate re-trigger within the cooldown window
 
         Assert.That(first, Is.Not.Null);
         Assert.That(second, Is.Null);

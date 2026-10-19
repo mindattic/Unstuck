@@ -1,3 +1,5 @@
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using UnstuckTaskbar.Hotkeys;
 using UnstuckTaskbar.Recovery;
@@ -55,6 +57,23 @@ public sealed class TrayIconService : IDisposable
     public void ShowBalloon(string title, string text) =>
         icon.ShowBalloonTip(4000, title, text, Forms.ToolTipIcon.Info);
 
+    /// <summary>Runs the recovery in the background and shows its summary; a no-op during the cooldown.</summary>
+    public async void RunNow()
+    {
+        var result = await runner.RunAsync();
+        if (result is not null) ShowBalloon("Unstuck", result.Summary);
+    }
+
+    /// <summary>Applies "Start with Windows"; a failure (e.g. task creation blocked by policy) is shown, not thrown.</summary>
+    public void ApplyStartWithWindows(bool enabled)
+    {
+        try { StartupRegistrar.Apply(enabled, exePath); }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or COMException)
+        {
+            ShowBalloon("Start with Windows failed", ex.Message);
+        }
+    }
+
     private void BuildMenu()
     {
         var menu = icon.ContextMenuStrip!;
@@ -74,26 +93,30 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add("Exit", null, (_, _) => Application.Current.Shutdown());
     }
 
-    private void RunNow()
-    {
-        var result = runner.Run();
-        if (result is null) return; // cooldown - a run just happened
-        ShowBalloon("Unstuck", result.Summary);
-    }
-
     private void ChangeHotkey()
     {
-        var dialog = new HotkeyCaptureDialog();
-        if (dialog.ShowDialog() != true || dialog.Result is not { } gesture) return;
+        // While our own hotkey is registered, Windows consumes that key before the dialog sees it: pressing
+        // the current hotkey would fire a recovery instead of being captured. Release it for the dialog.
+        var previous = settings.Load().HotkeyGesture;
+        hotkeyManager.Unregister();
 
-        settings.Update(s => s.HotkeyGesture = gesture.ToSettingsString());
-        if (hotkeyManager.RegisterCurrent(gesture)) UpdateTooltip();
+        var dialog = new HotkeyCaptureDialog();
+        if (dialog.ShowDialog() == true && dialog.Result is { } gesture)
+        {
+            settings.Update(s => s.HotkeyGesture = gesture.ToSettingsString());
+            hotkeyManager.RegisterCurrent(gesture);
+            UpdateTooltip();
+        }
+        else if (HotkeyGesture.TryParse(previous, out var old))
+        {
+            hotkeyManager.RegisterCurrent(old);
+        }
     }
 
     private void ToggleStartWithWindows(bool enabled)
     {
         settings.Update(s => s.StartWithWindows = enabled);
-        StartupRegistrar.Apply(enabled, exePath);
+        ApplyStartWithWindows(enabled);
     }
 
     public void Dispose()

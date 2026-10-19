@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Change Unstuck Hotkey" Width="360" SizeToContent="Height"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
-        ShowInTaskbar="False" Topmost="True">
+        ShowInTaskbar="False" Topmost="True"
+        FocusManager.FocusedElement="{Binding ElementName=CaptureBox}">
     <StackPanel Margin="20">
         <TextBlock Text="Press the key combination you want, including a media key."
                    TextWrapping="Wrap" Margin="0,0,0,12" />

@@ -23,10 +23,17 @@ public static class StartupRegistrar
     /// <summary>Creates or removes the logon task to match <paramref name="enabled"/>. Idempotent.</summary>
     public static void Apply(bool enabled, string exe)
     {
+        // A dev build (bin\Debug, bin\Release, dotnet run) must not repoint the logon task and shortcut
+        // at itself - they'd break as soon as that build output is cleaned.
+        if (IsDevBuild(exe)) return;
         if (enabled) EnsureTask(exe);
         else RemoveTask();
         EnsureShortcut(exe);
     }
+
+    internal static bool IsDevBuild(string exe) =>
+        exe.Contains(@"\bin\Debug\", StringComparison.OrdinalIgnoreCase) ||
+        exe.Contains(@"\bin\Release\", StringComparison.OrdinalIgnoreCase);
 
     public static bool IsRegistered() => Run("schtasks", "/Query", "/TN", TaskName).Code == 0;
 

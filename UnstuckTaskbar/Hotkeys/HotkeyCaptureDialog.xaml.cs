@@ -18,13 +18,20 @@ public partial class HotkeyCaptureDialog : Window
 
     private void CaptureBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        // A bare Esc must reach the Cancel button (IsCancel) instead of being captured.
+        if (e.Key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None) return;
         e.Handled = true;
 
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         if (ModifierOnlyKeys.Contains(key)) return; // wait for a real key
 
         var gesture = new HotkeyGesture(Keyboard.Modifiers, key);
-        if (!gesture.IsValid) return;
+        if (!gesture.IsValid)
+        {
+            WarningText.Text = "Add Ctrl, Alt, Shift or Win - only media and volume keys work on their own.";
+            WarningText.Visibility = Visibility.Visible;
+            return;
+        }
 
         Result = gesture;
         CaptureBox.Text = gesture.ToDisplayString();

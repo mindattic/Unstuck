@@ -28,4 +28,4 @@ _Nothing recorded yet._
 | UNS-T5 | 2026-10-18 | feature | closed | Tray hotkey runs recovery off the UI thread, requires a modifier unless the key has no default system meaning, and warns in the capture dialog instead of silently refusing | — |
 | UNS-T6 | 2026-10-18 | fix | closed | deploy.ps1 restarts UnstuckTaskbar after a redeploy and exits non-zero when publish fails | — |
 | UNS-T7 | 2026-10-18 | chore | closed | Add project AGENTS.md pointing to the shared mindattic-agent-standard protocol | — |
-| UNS-T7 | 2026-10-18 | chore | closed | Add project AGENTS.md pointing to the shared mindattic-agent-standard protocol | — |
+| UNS-T8 | 2026-10-18 | fix | closed | Remove a duplicate UNS-T7 row accidentally hand-appended to the generated USER_STORIES.md | — |

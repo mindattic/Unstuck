@@ -6,7 +6,7 @@ layer: stories
 status: living
 updated: 2026-10-16
 ---
-<!-- GENERATED from MindAttic.Workflow/data/workflow.db by `workflow db render`. Do not edit: this file is rewritten from the database; change stories and tickets with the workflow CLI. -->
+<!-- GENERATED from MindAttic.Tickets/data/Tickets.db by `tickets db render`. Do not edit: this file is rewritten from the database; change stories and tickets with the tickets CLI. -->
 
 # Unstuck — User Stories
 > ✅ done (shipped & tested) · 🟡 partial · ⬜ planned. Every ✅ cites the test.
@@ -29,3 +29,6 @@ _Nothing recorded yet._
 | UNS-T6 | 2026-10-18 | fix | closed | deploy.ps1 restarts UnstuckTaskbar after a redeploy and exits non-zero when publish fails | — |
 | UNS-T7 | 2026-10-18 | chore | closed | Add project AGENTS.md pointing to the shared mindattic-agent-standard protocol | — |
 | UNS-T8 | 2026-10-18 | fix | closed | Remove a duplicate UNS-T7 row accidentally hand-appended to the generated USER_STORIES.md | — |
+| UNS-T9 | 2026-10-18 | chore | open | Stop registering the UnstuckTaskbar Logon task in deploy/setup (job now in MindAttic.WatchDog M.WD-T9) | scheduled-task consolidation 2026-10-18 |
+| UNS-T10 | 2026-10-19 | chore | open | Convert tracked source files to LF line endings via .gitattributes, per HOUSE-LAW-13 (low priority) | — |
+| UNS-T11 | 2026-10-20 | docs | open | Publish Unstuck docs to GitHub Pages via the shared Toolkit DocFX pipeline: run adopt-docs-site.ps1 (README.md as home page, docs/*.md as articles, API reference only where the code builds in CI), enable Pages with build_type=workflow, set the repo homepage URL, retire tools/build-readme.ps1 and README.htm, confirm the docs Actions run is green and https://mindattic.github.io/Unstuck/ returns 200. Depends on MAT-T8. Also write the missing README.md first, since it becomes the site's home page. | — |

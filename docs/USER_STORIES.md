@@ -30,8 +30,9 @@ _Nothing recorded yet._
 | UNS-T7 | 2026-10-18 | chore | closed | Add project AGENTS.md pointing to the shared mindattic-agent-standard protocol | — |
 | UNS-T8 | 2026-10-18 | fix | closed | Remove a duplicate UNS-T7 row accidentally hand-appended to the generated USER_STORIES.md | — |
 | UNS-T9 | 2026-10-18 | chore | open | Stop registering the UnstuckTaskbar Logon task in deploy/setup (job now in MindAttic.WatchDog M.WD-T9) | scheduled-task consolidation 2026-10-18 |
-| UNS-T10 | 2026-10-19 | chore | open | Convert tracked source files to LF line endings via .gitattributes, per HOUSE-LAW-13 (low priority) | — |
+| UNS-T10 | 2026-10-19 | chore | wont-do | Convert tracked source files to LF line endings via .gitattributes, per HOUSE-LAW-13 (low priority) | — |
 | UNS-T11 | 2026-10-20 | docs | open | Publish Unstuck docs to GitHub Pages via the shared Toolkit DocFX pipeline: run adopt-docs-site.ps1 (README.md as home page, docs/*.md as articles, API reference only where the code builds in CI), enable Pages with build_type=workflow, set the repo homepage URL, retire tools/build-readme.ps1 and README.htm, confirm the docs Actions run is green and https://mindattic.github.io/Unstuck/ returns 200. Depends on MAT-T8. Also write the missing README.md first, since it becomes the site's home page. | — |
 | UNS-T12 | 2026-10-20 | chore | closed | Move to MindAttic.Components.Wpf 19.0.0 (Mc->Ma rename): bump the PackageReference and confirm the build; a scan found no Mc-prefixed style/class usages of its own to rename | c19e3d0 |
 | UNS-T13 | 2026-10-20 | chore | open | Bug hunt: run an exhaustive /bughunt over the whole repo and fix every real bug found (each fix under its own fix ticket), then hunt again; close this only when a full pass finds nothing | user request 2026-10-20: approved repo sweep gap-fill |
 | UNS-T14 | 2026-10-21 | docs | closed | Update USER_STORIES.md | — |
+| UNS-T15 | 2026-10-22 | docs | closed | Update USER_STORIES.md | — |

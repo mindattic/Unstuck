@@ -22,7 +22,7 @@ public sealed class UnstuckRunner
 
     /// <summary>
     /// UnstuckTaskbar.exe only ever runs from its deployed location (<c>C:\Apps\Unstuck\</c>), where
-    /// deploy.ps1 always places unstuck.ps1 alongside it — so no source-repo fallback is needed.
+    /// run.ps1 always places unstuck.ps1 alongside it — so no source-repo fallback is needed.
     /// </summary>
     public static string ScriptPath => Path.Combine(AppContext.BaseDirectory, "unstuck.ps1");
 
@@ -50,7 +50,7 @@ public sealed class UnstuckRunner
     {
         var scriptPath = ScriptPath;
         if (!File.Exists(scriptPath))
-            return new RecoveryResult($"unstuck.ps1 not found at {scriptPath} - run deploy.ps1.", RawOutput: "", ExitCode: -1);
+            return new RecoveryResult($"unstuck.ps1 not found at {scriptPath} - deploy it with the repo's run.ps1.", RawOutput: "", ExitCode: -1);
 
         var psi = new ProcessStartInfo("powershell.exe")
         {

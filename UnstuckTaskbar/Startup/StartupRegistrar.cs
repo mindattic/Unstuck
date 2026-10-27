@@ -12,7 +12,7 @@ namespace UnstuckTaskbar.Startup;
 /// scheduled task survives better (restarts on failure, no odd interactions with elevation) and
 /// matches what this ecosystem already ships. Also makes a Start Menu shortcut so the app is
 /// launchable without digging into <c>C:\Apps</c>. The existing desktop <c>Unstuck.lnk</c> (which
-/// runs the one-shot recovery via deploy.bat) is a separate shortcut for a separate app and is
+/// runs the one-shot recovery via run.bat) is a separate shortcut for a separate app and is
 /// never touched here.
 /// </summary>
 public static class StartupRegistrar

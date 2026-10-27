@@ -69,6 +69,14 @@ $taskbarDir  = Join-Path $repoDir 'UnstuckTaskbar'
 $taskbarExe  = Join-Path $out 'UnstuckTaskbar.exe'
 $taskbarSourceExt = @('.cs', '.csproj', '.xaml', '.json', '.props', '.targets', '.resx', '.ico')
 
+# cmd reads a running .bat by byte offset, and run.bat runs this script, so only rewrite a launcher
+# whose text actually changed, and always with CRLF so its goto labels resolve.
+function Write-BatIfChanged([string]$Path, [string]$Text) {
+    $Text = ($Text -replace "`r?`n", "`r`n").TrimEnd() + "`r`n"
+    if ((Test-Path -LiteralPath $Path) -and ([IO.File]::ReadAllText($Path) -ceq $Text)) { return }
+    [IO.File]::WriteAllText($Path, $Text, [Text.Encoding]::ASCII)
+}
+
 function Test-NeedsDeploy {
     if (-not (Test-Path $deployScript)) { return $true }
     if (-not (Test-Path $deployIcon)) { return $true }
@@ -121,7 +129,7 @@ goto deploy
 :launch
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0unstuck.ps1" %*
 "@
-    Set-Content -LiteralPath $bat -Value $deployBat -Encoding ascii
+    Write-BatIfChanged $bat $deployBat
     # run.bat replaces the old generated deploy.bat.
     $oldBat = Join-Path $out 'deploy.bat'
     if (Test-Path $oldBat) { Remove-Item $oldBat -Force -ErrorAction SilentlyContinue }

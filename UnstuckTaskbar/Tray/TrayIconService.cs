@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using MindAttic.Vault.Launch;
 using UnstuckTaskbar.Hotkeys;
 using UnstuckTaskbar.Recovery;
 using UnstuckTaskbar.Settings;
@@ -81,42 +82,18 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Clear();
         foreach (var item in old) item.Dispose(); // Clear() doesn't dispose; rebuilt fresh on every open.
 
-        var current = settings.Load();
         menu.Items.Add("Run Unstuck Now", null, (_, _) => RunNow());
-        menu.Items.Add("Change Hotkey...", null, (_, _) => ChangeHotkey());
-
-        var startWithWindows = new Forms.ToolStripMenuItem("Start with Windows") { Checked = current.StartWithWindows, CheckOnClick = true };
-        startWithWindows.Click += (_, _) => ToggleStartWithWindows(startWithWindows.Checked);
-        menu.Items.Add(startWithWindows);
+        menu.Items.Add("Settings...", null, (_, _) => OpenSettings());
 
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => Application.Current.Shutdown());
     }
 
-    private void ChangeHotkey()
+    /// <summary>Settings are edited in MindAttic.Vault.Desktop; saves come back through <see cref="SettingsService.Changed"/>.</summary>
+    public void OpenSettings()
     {
-        // While our own hotkey is registered, Windows consumes that key before the dialog sees it: pressing
-        // the current hotkey would fire a recovery instead of being captured. Release it for the dialog.
-        var previous = settings.Load().HotkeyGesture;
-        hotkeyManager.Unregister();
-
-        var dialog = new HotkeyCaptureDialog();
-        if (dialog.ShowDialog() == true && dialog.Result is { } gesture)
-        {
-            settings.Update(s => s.HotkeyGesture = gesture.ToSettingsString());
-            hotkeyManager.RegisterCurrent(gesture);
-            UpdateTooltip();
-        }
-        else if (HotkeyGesture.TryParse(previous, out var old))
-        {
-            hotkeyManager.RegisterCurrent(old);
-        }
-    }
-
-    private void ToggleStartWithWindows(bool enabled)
-    {
-        settings.Update(s => s.StartWithWindows = enabled);
-        ApplyStartWithWindows(enabled);
+        if (!VaultSettings.Open(SettingsService.AppId))
+            ShowBalloon("MindAttic Vault isn't installed", $"Install MindAttic Vault to edit these settings, or edit {settings.FilePath}.");
     }
 
     public void Dispose()

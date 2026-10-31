@@ -178,6 +178,10 @@ if (-not (Test-TaskbarNeedsPublish)) {
     } else {
         Write-Host "  Published $taskbarExe" -ForegroundColor Green
     }
+    if (Test-Path $taskbarExe) {
+        # Seeds first-run defaults and writes settings.manifest.json so MindAttic Vault shows this app's tab.
+        & $taskbarExe --write-settings-manifest | Out-Null
+    }
     if ($wasRunning -and (Test-Path $taskbarExe)) { Start-Process -FilePath $taskbarExe -WorkingDirectory $out }
 }
 

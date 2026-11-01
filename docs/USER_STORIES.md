@@ -37,3 +37,6 @@ _Nothing recorded yet._
 | UNS-T14 | 2026-10-21 | docs | closed | Update USER_STORIES.md | — |
 | UNS-T15 | 2026-10-22 | docs | closed | Update USER_STORIES.md | — |
 | UNS-T16 | 2026-10-24 | docs | closed | Update USER_STORIES.md | — |
+| UNS-T17 | 2026-10-31 | feature | closed | LAMP: move Unstuck's app-level settings and keys to MindAttic.Vault.Desktop (manifest, LoadOrSeed, shared named keys, cog opens Vault) | 04c0434 LampSettingsTests (46/46) |
+| UNS-T18 | 2026-10-31 | chore | closed | Vault tab named after the repo: SettingsApp DisplayName 'Unstuck Taskbar' -> 'Unstuck' | M.VALT-T75 c686eaf |
+| UNS-T19 | 2026-10-31 | docs | closed | Update USER_STORIES.md | — |

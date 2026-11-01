@@ -7,7 +7,7 @@ namespace UnstuckTaskbar.Settings;
 /// <c>%LocalAppData%\MindAttic\UnstuckTaskbar\settings.json</c>: a hotkey and "start with Windows"
 /// belong to this PC, not the roaming profile.
 /// </summary>
-[SettingsApp(SettingsService.AppId, "Unstuck Taskbar", Local = true, Icon = "wrench",
+[SettingsApp(SettingsService.AppId, "Unstuck", Local = true, Icon = "wrench",
     Description = "Tray app that runs /unstuck from a global hotkey.")]
 public sealed class TaskbarSettings
 {

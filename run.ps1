@@ -24,7 +24,9 @@
     single-file build (same flags as Automata/KdpPublish's run.ps1). This does not touch
     run.bat or the plain script/icon copy above: the existing desktop shortcut keeps
     running the one-shot recovery exactly as before: UnstuckTaskbar.exe is just an
-    additional file dropped alongside it.
+    additional file dropped alongside it. To replace the exe it stops only THIS desktop
+    session's UnstuckTaskbar (restarting it afterwards); if another signed-in user's copy
+    holds the exe, it is left running and the publish is skipped with a warning (exit 1).
 
     Without -Force it only redeploys when the deployed script or icon is
     missing, or the source is newer than the deployed copy, so an unchanged run is a
@@ -162,27 +164,40 @@ if (-not (Test-TaskbarNeedsPublish)) {
 } else {
     # The running tray app locks its exe; stop it, and start it again afterwards so a redeploy
     # (which run.bat's Deploy & Run triggers) doesn't leave the hotkey dead until next logon.
-    $wasRunning = @(Get-Process 'UnstuckTaskbar' -ErrorAction SilentlyContinue).Count -gt 0
-    Get-Process 'UnstuckTaskbar' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-    Write-Host "  Publishing UnstuckTaskbar -> $taskbarExe" -ForegroundColor Cyan
-    dotnet publish $taskbarProj `
-        --configuration Release `
-        --runtime win-x64 `
-        --self-contained false `
-        /p:PublishSingleFile=true `
-        /p:IncludeNativeLibrariesForSelfExtract=true `
-        --output $out | Out-Host
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $taskbarExe)) {
-        Write-Host 'Publishing UnstuckTaskbar FAILED.' -ForegroundColor Red
+    # Only this desktop session's copy is stopped: another signed-in user's tray app is never
+    # killed. If one still holds the exe lock, the publish is skipped and reported instead.
+    $mySession = (Get-Process -Id $PID).SessionId
+    $allTray   = @(Get-Process 'UnstuckTaskbar' -ErrorAction SilentlyContinue)
+    $mine      = @($allTray | Where-Object { $_.SessionId -eq $mySession })
+    $others    = @($allTray | Where-Object { $_.SessionId -ne $mySession })
+    if ($others.Count -gt 0) {
+        # Leave this session's copy running too: the exe can't be replaced anyway.
+        $sessions = ($others | ForEach-Object SessionId | Sort-Object -Unique) -join ', '
+        Write-Host "  UnstuckTaskbar is running in another session ($sessions) and locks $taskbarExe - not stopping it; publish skipped. Close it there, then redeploy." -ForegroundColor Yellow
         $failed = $true
     } else {
-        Write-Host "  Published $taskbarExe" -ForegroundColor Green
+        $wasRunning = $mine.Count -gt 0
+        $mine | Stop-Process -Force -ErrorAction SilentlyContinue
+        Write-Host "  Publishing UnstuckTaskbar -> $taskbarExe" -ForegroundColor Cyan
+        dotnet publish $taskbarProj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained false `
+            /p:PublishSingleFile=true `
+            /p:IncludeNativeLibrariesForSelfExtract=true `
+            --output $out | Out-Host
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path $taskbarExe)) {
+            Write-Host 'Publishing UnstuckTaskbar FAILED.' -ForegroundColor Red
+            $failed = $true
+        } else {
+            Write-Host "  Published $taskbarExe" -ForegroundColor Green
+        }
+        if (Test-Path $taskbarExe) {
+            # Seeds first-run defaults and writes settings.manifest.json so MindAttic Vault shows this app's tab.
+            & $taskbarExe --write-settings-manifest | Out-Null
+        }
+        if ($wasRunning -and (Test-Path $taskbarExe)) { Start-Process -FilePath $taskbarExe -WorkingDirectory $out }
     }
-    if (Test-Path $taskbarExe) {
-        # Seeds first-run defaults and writes settings.manifest.json so MindAttic Vault shows this app's tab.
-        & $taskbarExe --write-settings-manifest | Out-Null
-    }
-    if ($wasRunning -and (Test-Path $taskbarExe)) { Start-Process -FilePath $taskbarExe -WorkingDirectory $out }
 }
 
 if ($Launch) {

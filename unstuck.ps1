@@ -143,7 +143,23 @@ $procs = Get-Process
 $cpuPct = @{}
 foreach ($p in $procs) { if ($before.ContainsKey($p.Id) -and $p.CPU) { $cpuPct[$p.Id] = [math]::Round((($p.CPU - $before[$p.Id]) / 2) * 100 / $cores, 1) } }
 
-function IsProtected($p) { $protected -contains $p.Name -or $p.Id -eq $PID -or $p.SessionId -eq 0 }
+# Only this desktop's session is ours to fix: run elevated, Stop-Process would also reach other signed-in users' apps.
+$mySession = (Get-Process -Id $PID).SessionId
+# "Whatever is running this command" is the whole parent chain, not just this PowerShell: the app hosting the
+# terminal (a terminal or IDE not on the list above, the tray app) must survive being hung or the biggest process.
+# A parent whose PID was reused by a process that started after its child is not really the parent - stop there.
+$ancestors = @{}
+$allProcs = @{}; Get-CimInstance Win32_Process | ForEach-Object { $allProcs[[int]$_.ProcessId] = $_ }
+$cur = $allProcs[[int]$PID]
+while ($cur) {
+    $parent = $allProcs[[int]$cur.ParentProcessId]
+    if (-not $parent -or $ancestors.ContainsKey([int]$parent.ProcessId) -or $parent.ProcessId -eq $cur.ProcessId -or
+        ($parent.CreationDate -and $cur.CreationDate -and $parent.CreationDate -gt $cur.CreationDate)) { break }
+    $ancestors[[int]$parent.ProcessId] = $true
+    $cur = $parent
+}
+
+function IsProtected($p) { $protected -contains $p.Name -or $p.Id -eq $PID -or $ancestors.ContainsKey($p.Id) -or $p.SessionId -eq 0 -or $p.SessionId -ne $mySession }
 
 # ---- 2. Culprits ----
 $culprits = @{}
@@ -167,19 +183,19 @@ foreach ($id in $culprits.Keys) { Act "kill $($culprits[$id]) [pid $id]" { Stop-
 
 # ---- 3. Explorer ----
 # (Not named $explorer: PowerShell variables are case-insensitive, so it would be the -Explorer switch.)
-$shell = Get-Process explorer -ErrorAction SilentlyContinue | Select-Object -First 1
+$shell = Get-Process explorer -ErrorAction SilentlyContinue | Where-Object SessionId -eq $mySession | Select-Object -First 1
 if ($Explorer -or ($shell -and -not $shell.Responding) -or -not $shell) {
     $why = if ($Explorer) { 'as asked' } elseif (-not $shell) { 'it was not running' } else { 'it was not responding' }
     Act "restart Explorer ($why)" {
-        Get-Process explorer -ErrorAction SilentlyContinue | Stop-Process -Force
+        Get-Process explorer -ErrorAction SilentlyContinue | Where-Object SessionId -eq $mySession | Stop-Process -Force
         Start-Sleep -Milliseconds 800
-        if (-not (Get-Process explorer -ErrorAction SilentlyContinue)) { Start-Process explorer.exe }
+        if (-not (Get-Process explorer -ErrorAction SilentlyContinue | Where-Object SessionId -eq $mySession)) { Start-Process explorer.exe }
     }
 }
 
 # ---- 4. Global mouse hooks: kill, then relaunch from the same path ----
 function Restart-App([string[]]$names, [string]$label) {
-    $running = @(Get-Process | Where-Object { $names -contains $_.Name -and $_.SessionId -ne 0 })
+    $running = @(Get-Process | Where-Object { $names -contains $_.Name -and $_.SessionId -ne 0 -and $_.SessionId -eq $mySession })
     if ($running.Count -eq 0) { return }
     $exe = ($running | Where-Object { $_.Path } | Select-Object -First 1).Path
     Act "restart $label (its mouse hook can swallow every click)" {
@@ -191,7 +207,7 @@ function Restart-App([string[]]$names, [string]$label) {
 Restart-App @('DisplayFusion', 'DisplayFusionHookApp32', 'DisplayFusionHookApp64', 'DisplayFusionCommand') 'DisplayFusion'
 if ($Hooks) {
     # Only the PowerToys runner is relaunched; it starts its own modules.
-    $pt = @(Get-Process | Where-Object { $_.Name -like 'PowerToys*' -and $_.SessionId -ne 0 })
+    $pt = @(Get-Process | Where-Object { $_.Name -like 'PowerToys*' -and $_.SessionId -ne 0 -and $_.SessionId -eq $mySession })
     if ($pt.Count -gt 0) {
         $runner = ($pt | Where-Object { $_.Name -eq 'PowerToys' -and $_.Path } | Select-Object -First 1).Path
         Act 'restart PowerToys (FancyZones / Always On Top / mouse utilities hook the mouse)' {
@@ -204,7 +220,7 @@ if ($Hooks) {
 
 # ---- 5. Overlays ----
 if ($Overlays) {
-    foreach ($p in $procs | Where-Object { $overlayApps -contains $_.Name }) { Act "close overlay $($p.Name) [pid $($p.Id)]" { Stop-Process -Id $p.Id -Force } }
+    foreach ($p in $procs | Where-Object { $overlayApps -contains $_.Name -and $_.SessionId -eq $mySession }) { Act "close overlay $($p.Name) [pid $($p.Id)]" { Stop-Process -Id $p.Id -Force } }
 }
 
 # ---- Report ----

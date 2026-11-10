@@ -40,3 +40,8 @@ _Nothing recorded yet._
 | UNS-T17 | 2026-10-31 | feature | closed | LAMP: move Unstuck's app-level settings and keys to MindAttic.Vault.Desktop (manifest, LoadOrSeed, shared named keys, cog opens Vault) | 04c0434 LampSettingsTests (46/46) |
 | UNS-T18 | 2026-10-31 | chore | closed | Vault tab named after the repo: SettingsApp DisplayName 'Unstuck Taskbar' -> 'Unstuck' | M.VALT-T75 c686eaf |
 | UNS-T19 | 2026-10-31 | docs | closed | Update USER_STORIES.md | — |
+| UNS-T20 | 2026-11-02 | chore | open | Write README.md (none exists) so Unstuck can later adopt the MindAttic.Agency docs-site pipeline and publish to GitHub Pages (HOUSE-LAW-14) | — |
+| UNS-T21 | 2026-11-02 | fix | closed | Bughunt sweep, two passes: find and fix real bugs across tracked source (user request 2026-11-02) | — |
+| UNS-T22 | 2026-11-02 | fix | closed | Fix the open items the 2026-11-02 bughunt left for decision (run.ps1 stops UnstuckTaskbar only in current session; deploy) | — |
+| UNS-T23 | 2026-11-10 | chore | closed | Crash recovery: commit the command-catalog sync (.agent/commands/*.md) and regenerated docs/USER_STORIES.md left uncommitted by the session crash | — |
+| UNS-T24 | 2026-11-10 | chore | open | Crash recovery: commit the command-catalog sync (.agent/commands/*.md) and regenerated docs/USER_STORIES.md left uncommitted by the session crash | — |

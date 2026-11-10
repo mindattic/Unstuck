@@ -45,4 +45,5 @@ _Nothing recorded yet._
 | UNS-T22 | 2026-11-02 | fix | closed | Fix the open items the 2026-11-02 bughunt left for decision (run.ps1 stops UnstuckTaskbar only in current session; deploy) | — |
 | UNS-T23 | 2026-11-10 | chore | closed | Crash recovery: commit the command-catalog sync (.agent/commands/*.md) and regenerated docs/USER_STORIES.md left uncommitted by the session crash | — |
 | UNS-T24 | 2026-11-10 | chore | closed | Crash recovery: commit the command-catalog sync (.agent/commands/*.md) and regenerated docs/USER_STORIES.md left uncommitted by the session crash | — |
-| UNS-T25 | 2026-11-10 | chore | open | Crash recovery / fleet sync: commit the regenerated docs/USER_STORIES.md left uncommitted after other tickets closed elsewhere | — |
+| UNS-T25 | 2026-11-10 | chore | closed | Crash recovery / fleet sync: commit the regenerated docs/USER_STORIES.md left uncommitted after other tickets closed elsewhere | — |
+| UNS-T26 | 2026-11-10 | chore | open | Adopt the shared docs-site pipeline: turn on GitHub Pages | — |

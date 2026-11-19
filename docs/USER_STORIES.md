@@ -56,4 +56,4 @@ _Nothing recorded yet._
 | UNS-T33 | 2026-11-18 | chore | closed | User 2026-11-18: publish Unstuck v1.0.0 as the first official GitHub release (replaces the v1.1.0 release created earlier the same session) | release v1 (tag at 8d61207); package-release enforces whole-number versions |
 | UNS-T34 | 2026-11-18 | feature | closed | Tray icon's right-click menu gains 'Set Alternate Hotkey...' (live key capture) and 'Clear Alternate Hotkey', instead of only via Vault Desktop Settings' typed gesture string | — |
 | UNS-T35 | 2026-11-18 | feature | closed | Ctrl+Alt+U becomes a second permanent, hardcoded hotkey (like Ctrl+Alt+Break), independent of the user's one configurable extra-hotkey slot | — |
-| UNS-T36 | 2026-11-19 | feature | open | Inno Setup installer (Unstuck-Setup-vN.exe) like Bananarama: per-user, startup/desktop tasks, Apps & Features uninstall, whole-number release script | — |
+| UNS-T36 | 2026-11-19 | feature | closed | Inno Setup installer (Unstuck-Setup-vN.exe) like Bananarama: per-user, startup/desktop tasks, Apps & Features uninstall, whole-number release script | setup/Unstuck.iss; verified silent install/uninstall; release v3 |

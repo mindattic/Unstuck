@@ -6,24 +6,17 @@ its own.
 
 ## Install
 
-**One click:** download **[Install-Unstuck.bat](https://github.com/mindattic/Unstuck/releases/latest/download/Install-Unstuck.bat)**
-and double-click it. It installs into `C:\Apps\Unstuck` (no admin rights, no .NET needed), adds an *Unstuck* desktop
-shortcut and Start menu folder, makes the tray app start when you sign in, and starts it. Run it again to update.
-
-From PowerShell, the same thing in one line:
-
-```powershell
-irm https://raw.githubusercontent.com/mindattic/Unstuck/main/setup/Install-Unstuck.ps1 | iex
-```
-
-To uninstall, use **Start menu → Unstuck → Uninstall Unstuck**.
+Download **`Unstuck-Setup-v<N>.exe`** from the [latest release](https://github.com/mindattic/Unstuck/releases/latest)
+and run it. It installs per user into `%LOCALAPPDATA%\Programs\Unstuck` (no admin rights, no .NET needed), adds
+*Unstuck*, *Unstuck (check only)* and *Unstuck Tray* to the Start menu and an *Unstuck* desktop shortcut, makes the
+tray app start when you sign in, and starts it. Run a newer installer over the old one to update.
 
 **From source** (developers): run `install.bat` in the repo root. It needs the .NET 10 SDK and the MindAttic
 packages, builds the tray app into `C:\Apps\Unstuck` and writes `C:\Apps\Unstuck\run.bat`, a launcher menu with
 *Deploy & Run* and *Run*. Running it again rebuilds only what changed; `install.bat -Force` rebuilds everything.
 
 Only one copy of the tray app runs at a time. With MindAttic.Scheduler installed, its `UnstuckTaskbar` job starts
-the app at sign-in instead of the Startup-folder shortcut. Older versions registered their own
+the app at sign-in, and the installer doesn't add its own sign-in entry. Older versions registered their own
 `\MindAttic\UnstuckTaskbar\Logon` task; the app now deletes it when it starts, so the two don't compete.
 
 ## The hotkeys: Ctrl+Alt+Break and Ctrl+Alt+U
@@ -80,13 +73,13 @@ does nothing. A run that takes longer than 90 seconds is stopped.
 
 | What | Where |
 |---|---|
-| App and installed script | `C:\Apps\Unstuck\` |
+| App and installed script | `%LOCALAPPDATA%\Programs\Unstuck\` (installer) or `C:\Apps\Unstuck\` (from source) |
 | Settings | `%LOCALAPPDATA%\MindAttic\UnstuckTaskbar\settings.json` |
 | Reports | `%LOCALAPPDATA%\MindAttic\Unstuck\last-run.txt` and `history.log` |
-| Start at sign-in | Task Scheduler → `\MindAttic\Scheduler\UnstuckTaskbar` (managed by MindAttic.Scheduler) |
+| Start at sign-in | The `Unstuck` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, or with MindAttic.Scheduler, Task Scheduler → `\MindAttic\Scheduler\UnstuckTaskbar` |
 
 ## Uninstall
 
-Use **Start menu → Unstuck → Uninstall Unstuck**. It stops the tray app and removes `C:\Apps\Unstuck` and every
-shortcut the installer made. Settings and reports in `%LOCALAPPDATA%\MindAttic` are kept. If MindAttic.Scheduler
+Use **Windows Settings → Apps → Unstuck → Uninstall**. It stops the tray app and removes the install folder, its
+shortcuts and its sign-in entry. Settings and reports in `%LOCALAPPDATA%\MindAttic` are kept. If MindAttic.Scheduler
 runs the app, also remove its `UnstuckTaskbar` job from its `jobs.json`.

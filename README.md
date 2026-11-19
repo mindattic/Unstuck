@@ -20,24 +20,20 @@ Actions:
 No runaway process found.
 ```
 
-## Install (one click)
+## Install
 
-1. Download **[Install-Unstuck.bat](https://github.com/mindattic/Unstuck/releases/latest/download/Install-Unstuck.bat)**.
-2. Double-click it. If Windows SmartScreen warns about an unrecognized app, choose **More info → Run anyway**.
+1. Download **`Unstuck-Setup-v<N>.exe`** from the [latest release](https://github.com/mindattic/Unstuck/releases/latest) and run it.
+   If Windows SmartScreen warns about an unrecognized app, choose **More info → Run anyway**.
+2. Keep **Start the Unstuck tray app when Windows starts** ticked, and finish.
 
-That's it. You don't need admin rights or .NET. It installs into `C:\Apps\Unstuck`, adds an **Unstuck** desktop
-shortcut, and starts a small tray app that starts again every time you sign in.
+You don't need admin rights or .NET. It installs into `%LOCALAPPDATA%\Programs\Unstuck`, adds **Unstuck** to the
+Start menu (plus a desktop shortcut), and starts a small tray app.
 
 **Whenever clicks stop working, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Break</kbd> or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd>.**
 Both work from any app, and there's nothing to set up.
 
-Prefer PowerShell? This one line does the same:
-
-```powershell
-irm https://raw.githubusercontent.com/mindattic/Unstuck/main/setup/Install-Unstuck.ps1 | iex
-```
-
-To update, run the installer again. To remove Unstuck, use **Start menu → Unstuck → Uninstall Unstuck**.
+**Update:** run a newer installer over the old one; settings are kept.
+**Uninstall:** Windows Settings → Apps → Unstuck. Your settings and reports in `%LOCALAPPDATA%\MindAttic` are kept.
 
 ## Without installing
 
@@ -96,17 +92,17 @@ Every run's report is also saved to `%LOCALAPPDATA%\MindAttic\Unstuck\last-run.t
 |---|---|---|
 | **`unstuck.bat`** | A double-clickable wrapper for `unstuck.ps1`. | Whenever the desktop is stuck. |
 | **`unstuck.ps1`** | **The recovery itself.** Everything above happens here. | Run it through `unstuck.bat`, the tray app or `/unstuck`. |
-| **`setup/Install-Unstuck.bat`** | **The one-click installer** for everyone. It downloads the latest release; no build needed. | Once, and again to update. |
+| **`Unstuck-Setup-v<N>.exe`** | **The installer** for everyone, from [Releases](https://github.com/mindattic/Unstuck/releases/latest). Built from `setup/Unstuck.iss`. | Once, and again to update. |
 | **`install.bat`** | Builds and installs from source (a wrapper for `run.ps1`). Developers only: needs the .NET 10 SDK. | After changing the code. |
 | **`run.ps1`** | **The source installer.** It copies `unstuck.ps1` to `C:\Apps\Unstuck\` and builds the tray app there. It doesn't fix anything itself. | Through `install.bat`, or the `/deploy` command. Every MindAttic repo uses the name `run.ps1` for its deploy script. |
 
 In short: **`unstuck` fixes, `install`/`run` installs.**
 
-After installing, `C:\Apps\Unstuck\` contains:
+After installing, the install folder (`%LOCALAPPDATA%\Programs\Unstuck\` from the installer, `C:\Apps\Unstuck\` from source) contains:
 
 - `unstuck.ps1`: the installed copy of the recovery.
 - `UnstuckTaskbar.exe`: the tray app.
-- `unstuck.bat`, which the **Unstuck** desktop shortcut runs (one-click install).
+- `unstuck.bat`, which the **Unstuck** Start menu and desktop shortcuts run.
 - `run.bat`, from a source install only: a launcher menu with two choices, *1) Deploy & Run* (update from this repo,
   then recover) and *2) Run* (recover now).
 
@@ -127,7 +123,7 @@ breaks a full-screen app's hold on input. [Troubleshooting](docs/troubleshooting
 ## Requirements
 
 - Windows 10 or 11 with Windows PowerShell 5.1, which every Windows install already has.
-- For the tray app only: the [.NET 10 SDK](https://dotnet.microsoft.com/download) to build it, and the MindAttic
+- To build from source only: the [.NET 10 SDK](https://dotnet.microsoft.com/download) to build it, and the MindAttic
   NuGet packages (`MindAttic.Vault`, `MindAttic.Components.Wpf`), which resolve from `C:\LocalNuGet` (see
   `NuGet.config`).
 
@@ -138,13 +134,26 @@ Admin rights aren't needed. Run elevated, it still only touches your own session
 ```text
 unstuck.ps1            the recovery script
 unstuck.bat            double-click launcher for it
-setup/                 one-click installer (Install-Unstuck.bat/.ps1) and release packaging
+setup/                 Windows installer (Unstuck.iss), build.ps1 and release.ps1
 run.ps1 / install.bat  build-from-source installer: C:\Apps\Unstuck + tray app
 commands/unstuck.md    the /unstuck Claude Code command
 UnstuckTaskbar/        tray app (WPF, .NET 10): hotkey, menu, balloon summaries
 UnstuckTaskbar.Tests/  NUnit tests for the tray app
 docs/                  articles published to the GitHub Pages site
 ```
+
+## Releasing
+
+Releases are whole numbers: v1, v2, v3. From a clean `main`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File setup\release.ps1 -Ticket UNS-T<n>
+```
+
+It bumps `<Version>` in `UnstuckTaskbar.csproj` to the next whole number, builds `Unstuck-Setup-vN.exe` with
+[Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`), tags `vN`, pushes, and
+publishes the GitHub release. `setup\build.ps1` builds the installer without releasing. Builds run locally because
+the MindAttic packages restore from `C:\LocalNuGet`.
 
 ## Documentation
 

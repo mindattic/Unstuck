@@ -256,7 +256,15 @@ if ($Explorer -or ($shell -and -not $shell.Responding) -or -not $shell) {
 function Restart-App([string[]]$names, [string]$label) {
     $running = @(Get-Process | Where-Object { $names -contains $_.Name -and $_.SessionId -ne 0 -and $_.SessionId -eq $mySession })
     if ($running.Count -eq 0) { return }
-    $exe = ($running | Where-Object { $_.Path } | Select-Object -First 1).Path
+    # Relaunch the main app ($names[0]), never whichever helper (hook app, command process) happened to come first.
+    $main = $running | Where-Object { $_.Name -eq $names[0] -and $_.Path } | Select-Object -First 1
+    $exe = if ($main) { $main.Path } else {
+        $helper = $running | Where-Object { $_.Path } | Select-Object -First 1
+        if ($helper) {
+            $candidate = Join-Path (Split-Path -Parent $helper.Path) "$($names[0]).exe"
+            if (Test-Path -LiteralPath $candidate) { $candidate }
+        }
+    }
     Act "restart $label (its mouse hook can swallow every click)" {
         $running | Stop-Process -Force
         Start-Sleep -Seconds 1

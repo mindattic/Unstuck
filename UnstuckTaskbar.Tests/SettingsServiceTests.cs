@@ -46,4 +46,18 @@ public class SettingsServiceTests
         Assert.That(reloaded.HotkeyGesture, Is.EqualTo("Control+Alt+U"));
     }
 
+
+    [Test]
+    public void IsReadable_rejects_half_written_or_locked_files_so_a_mid_save_read_keeps_the_hotkey()
+    {
+        Directory.CreateDirectory(tempDir);
+        var file = Path.Combine(tempDir, "settings.json");
+        Assert.That(SettingsService.IsReadable(file), Is.True, "missing means defaults");
+        File.WriteAllText(file, "{ \"hotkeyGesture\": \"Contr");
+        Assert.That(SettingsService.IsReadable(file), Is.False, "half-written");
+        File.WriteAllText(file, "{ \"hotkeyGesture\": \"Control+Alt+U\" }");
+        Assert.That(SettingsService.IsReadable(file), Is.True);
+        using (new FileStream(file, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            Assert.That(SettingsService.IsReadable(file), Is.False, "locked by the writer");
+    }
 }

@@ -30,7 +30,6 @@ public class LampSettingsTests
         public List<string> Calls { get; } = new();
         public SettingsApplier Applier() => new(
             g => Calls.Add("hotkey " + (g?.ToSettingsString() ?? "none")),
-            on => Calls.Add("startup " + on),
             () => Calls.Add("tooltip"));
     }
 
@@ -44,7 +43,7 @@ public class LampSettingsTests
     [Test]
     public void Setting_HotkeyGesture_ImportsRoundTripsAndRegistersTheHotkey()
     {
-        WriteTodaysFile("""{ "hotkeyGesture": "Control+Alt+U", "startWithWindows": true }""");
+        WriteTodaysFile("""{ "hotkeyGesture": "Control+Alt+U" }""");
         var service = new SettingsService();
         var loaded = service.LoadOrSeed();
         Assert.That(loaded.HotkeyGesture, Is.EqualTo("Control+Alt+U"), "today's value carried over");
@@ -70,19 +69,12 @@ public class LampSettingsTests
     }
 
     [Test]
-    public void Setting_StartWithWindows_ImportsRoundTripsAndAppliesStartup()
+    public void StartWithWindows_IsGone_SchedulerOwnsLogonStart()
     {
-        WriteTodaysFile("""{ "hotkeyGesture": null, "startWithWindows": false }""");
-        var service = new SettingsService();
-        Assert.That(service.LoadOrSeed().StartWithWindows, Is.False, "today's value carried over");
-
-        service.Update(s => s.StartWithWindows = true);
-        Assert.That(new SettingsService().Load().StartWithWindows, Is.True);
-        Assert.That(SettingsManifestBuilder.Build<TaskbarSettings>().Find("MindAttic:Settings:UnstuckTaskbar:startWithWindows")!.Kind, Is.EqualTo(SettingKind.Bool));
-
-        var rec = new Recorder();
-        rec.Applier().Apply(new SettingsService().Load());
-        Assert.That(rec.Calls, Does.Contain("startup True"));
+        // UNS-T9: MindAttic.Scheduler's UnstuckTaskbar job starts the app; an old file's key is ignored, not an error.
+        Assert.That(typeof(TaskbarSettings).GetProperty("StartWithWindows"), Is.Null);
+        WriteTodaysFile("""{ "hotkeyGesture": "Control+Alt+U", "startWithWindows": false }""");
+        Assert.That(new SettingsService().LoadOrSeed().HotkeyGesture, Is.EqualTo("Control+Alt+U"));
     }
 
     [Test]
@@ -98,10 +90,10 @@ public class LampSettingsTests
     {
         var rec = new Recorder();
         var applier = rec.Applier();
-        applier.Apply(new TaskbarSettings { HotkeyGesture = "Control+Alt+U", StartWithWindows = true });
+        applier.Apply(new TaskbarSettings { HotkeyGesture = "Control+Alt+U" });
         rec.Calls.Clear();
-        applier.Apply(new TaskbarSettings { HotkeyGesture = "Control+Alt+U", StartWithWindows = false });
-        Assert.That(rec.Calls, Is.EqualTo(new[] { "startup False", "tooltip" }));
+        applier.Apply(new TaskbarSettings { HotkeyGesture = "Control+Alt+U" });
+        Assert.That(rec.Calls, Is.EqualTo(new[] { "tooltip" }));
     }
 
     [Test]
@@ -110,7 +102,7 @@ public class LampSettingsTests
         var m = SettingsManifestBuilder.Build<TaskbarSettings>();
         Assert.That(m.AppId, Is.EqualTo(SettingsService.AppId));
         Assert.That(m.Scope, Is.EqualTo(SettingsManifest.LocalScope));
-        Assert.That(m.Fields.Select(f => f.Label), Is.EqualTo(new[] { "Recovery hotkey", "Start with Windows" }));
+        Assert.That(m.Fields.Select(f => f.Label), Is.EqualTo(new[] { "Recovery hotkey" }));
         Assert.That(m.Fields.All(f => !string.IsNullOrWhiteSpace(f.Help)), Is.True);
         Assert.That(m.Credentials, Is.Empty);
     }
@@ -120,7 +112,6 @@ public class LampSettingsTests
     {
         var seeded = new SettingsService().LoadOrSeed();
         Assert.That(seeded.HotkeyGesture, Is.Null);
-        Assert.That(seeded.StartWithWindows, Is.True);
         Assert.That(File.Exists(Path.Combine(AppFolder, SettingsManifest.FileName)), Is.True);
     }
 

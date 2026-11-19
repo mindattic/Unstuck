@@ -47,9 +47,10 @@ public partial class App : Application
         trayIcon = new TrayIconService(settingsService, hotkeyManager, runner, exePath);
         hotkeyManager.HotkeyPressed += trayIcon.RunNow;
 
+        trayIcon.PrepareStartup();
+
         var applier = new SettingsApplier(
             gesture => { if (gesture is { } g) hotkeyManager.RegisterCurrent(g); else hotkeyManager.Unregister(); },
-            trayIcon.ApplyStartWithWindows,
             trayIcon.UpdateTooltip);
         applier.Apply(current);
 

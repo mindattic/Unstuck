@@ -16,8 +16,11 @@ Running it again only rebuilds what changed; `install.bat -Force` rebuilds every
 the installer stops it to replace the exe and starts it again afterwards.
 
 Start it from **Start menu → MindAttic → UnstuckTaskbar**, or run `C:\Apps\Unstuck\UnstuckTaskbar.exe`. The first
-time it runs, it adds that Start menu shortcut and, with *Start with Windows* on (the default), a logon task under
-`\MindAttic\UnstuckTaskbar\` in Task Scheduler so it starts every time you sign in. Only one copy runs at a time.
+time it runs, it adds that Start menu shortcut. Only one copy runs at a time.
+
+To start it every time you sign in, use **MindAttic.Scheduler**: its `UnstuckTaskbar` job (in its `jobs.json`)
+starts the app at sign-in and restarts it if it crashes. Older versions of the app registered their own
+`\MindAttic\UnstuckTaskbar\Logon` task; the app now deletes that task when it starts, so the two don't compete.
 
 ## Set a hotkey
 
@@ -36,8 +39,7 @@ Without MindAttic Vault, edit `%LOCALAPPDATA%\MindAttic\UnstuckTaskbar\settings.
 
 ```json
 {
-  "HotkeyGesture": "Control+Alt+U",
-  "StartWithWindows": true
+  "HotkeyGesture": "Control+Alt+U"
 }
 ```
 
@@ -52,7 +54,7 @@ Without MindAttic Vault, edit `%LOCALAPPDATA%\MindAttic\UnstuckTaskbar\settings.
 | Run With → Everything | Runs with all three options. |
 | Show Last Report | Opens the full report of the latest run. |
 | Show History | Opens the log of earlier runs. |
-| Settings… | Opens the hotkey and startup settings. |
+| Settings… | Opens the hotkey setting. |
 | Exit | Closes the tray app and frees the hotkey. |
 
 After each run, a balloon sums up what was done. **Click the balloon to open the full report.** A warning balloon
@@ -68,11 +70,11 @@ does nothing. A run that takes longer than 90 seconds is stopped.
 | App and installed script | `C:\Apps\Unstuck\` |
 | Settings | `%LOCALAPPDATA%\MindAttic\UnstuckTaskbar\settings.json` |
 | Reports | `%LOCALAPPDATA%\MindAttic\Unstuck\last-run.txt` and `history.log` |
-| Logon task | Task Scheduler → `\MindAttic\UnstuckTaskbar\Logon` |
+| Start at sign-in | Task Scheduler → `\MindAttic\Scheduler\UnstuckTaskbar` (managed by MindAttic.Scheduler) |
 
 ## Uninstall
 
 1. Right-click the tray icon and choose **Exit**.
-2. In the settings, turn off *Start with Windows*, or delete the `\MindAttic\UnstuckTaskbar\Logon` task in Task
-   Scheduler.
+2. Remove the `UnstuckTaskbar` job from MindAttic.Scheduler's `jobs.json`, or disable the
+   `\MindAttic\Scheduler\UnstuckTaskbar` task in Task Scheduler.
 3. Delete `C:\Apps\Unstuck\`, the *UnstuckTaskbar* Start menu shortcut and `%LOCALAPPDATA%\MindAttic\Unstuck*`.

@@ -87,13 +87,14 @@ public sealed class TrayIconService : IDisposable
         }
     }
 
-    /// <summary>Applies "Start with Windows"; a failure (e.g. task creation blocked by policy) is shown, not thrown.</summary>
-    public void ApplyStartWithWindows(bool enabled)
+    /// <summary>Removes the legacy logon task (MindAttic.Scheduler starts the app now) and keeps the Start Menu
+    /// shortcut current; a failure is shown, not thrown.</summary>
+    public void PrepareStartup()
     {
-        try { StartupRegistrar.Apply(enabled, exePath); }
+        try { StartupRegistrar.Apply(exePath); }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException or COMException)
         {
-            ShowBalloon("Start with Windows failed", ex.Message, Forms.ToolTipIcon.Warning);
+            ShowBalloon("Start Menu shortcut failed", ex.Message, Forms.ToolTipIcon.Warning);
         }
     }
 

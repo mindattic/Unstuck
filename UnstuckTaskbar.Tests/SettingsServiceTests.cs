@@ -34,25 +34,16 @@ public class SettingsServiceTests
         var settings = store.Load();
 
         Assert.That(settings.HotkeyGesture, Is.Null);
-        Assert.That(settings.StartWithWindows, Is.True);
     }
 
     [Test]
     public void Persists_across_load_save_round_trip()
     {
-        store.Update(s =>
-        {
-            s.HotkeyGesture = "Control+Alt+U";
-            s.StartWithWindows = false;
-        });
+        store.Update(s => s.HotkeyGesture = "Control+Alt+U");
 
         var reloaded = store.Load();
 
         Assert.That(reloaded.HotkeyGesture, Is.EqualTo("Control+Alt+U"));
-        Assert.That(reloaded.StartWithWindows, Is.False);
     }
 
-    [Test]
-    public void New_TaskbarSettings_defaults_StartWithWindows_true() =>
-        Assert.That(new TaskbarSettings().StartWithWindows, Is.True);
 }

@@ -4,8 +4,9 @@ namespace UnstuckTaskbar.Settings;
 
 /// <summary>
 /// Per-machine preferences, edited in MindAttic.Vault.Desktop (tray menu → Settings…) and kept in
-/// <c>%LocalAppData%\MindAttic\UnstuckTaskbar\settings.json</c>: a hotkey and "start with Windows"
-/// belong to this PC, not the roaming profile.
+/// <c>%LocalAppData%\MindAttic\UnstuckTaskbar\settings.json</c>: a hotkey belongs to this PC, not the roaming
+/// profile. (Starting at sign-in used to be a setting here too; MindAttic.Scheduler owns that now, UNS-T9. An old
+/// file's <c>startWithWindows</c> key is simply ignored.)
 /// </summary>
 [SettingsApp(SettingsService.AppId, "Unstuck", Local = true, Icon = "wrench",
     Description = "Tray app that runs /unstuck from a global hotkey.")]
@@ -15,8 +16,4 @@ public sealed class TaskbarSettings
     [Setting("Recovery hotkey", Group = "Hotkey", Order = 1,
         Help = "Global shortcut that runs /unstuck, written as modifiers and a key: \"Control+Alt+U\", \"Control+Shift+F12\", or a media key alone such as \"MediaPlayPause\". Leave empty for none.")]
     public string? HotkeyGesture { get; set; }
-
-    [Setting("Start with Windows", Group = "Startup", Order = 1,
-        Help = "Start Unstuck Taskbar when you sign in to Windows.")]
-    public bool StartWithWindows { get; set; } = true;
 }

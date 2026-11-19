@@ -20,14 +20,16 @@ public sealed class HotkeyManager : IDisposable
 {
     // HWND_MESSAGE: a message-only window needs no WndClass/visible surface at all.
     private static readonly nint HwndMessage = -3;
-    private const int UserId = 1, UserCancelId = 2, BuiltInId = 3, BuiltInCancelId = 4;
+    private const int UserId = 1, UserCancelId = 2, BuiltInId = 3, BuiltInCancelId = 4, BuiltInExtraId = 5, BuiltInExtraCancelId = 6;
     private const uint VkCancel = 0x03;
     public static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(30);
 
     private readonly HwndSource source;
     private readonly HashSet<int> registered = [];
     private DispatcherTimer? retry;
+    private DispatcherTimer? retryExtra;
     private bool builtInFailureReported;
+    private bool builtInExtraFailureReported;
 
     public event Action? HotkeyPressed;
 
@@ -48,6 +50,9 @@ public sealed class HotkeyManager : IDisposable
 
     /// <summary>True while Ctrl+Alt+Break is registered.</summary>
     public bool BuiltInActive => registered.Contains(BuiltInId) || registered.Contains(BuiltInCancelId);
+
+    /// <summary>True while Ctrl+Alt+U (UNS-T35's second permanent hotkey) is registered.</summary>
+    public bool BuiltInExtraActive => registered.Contains(BuiltInExtraId) || registered.Contains(BuiltInExtraCancelId);
 
     /// <summary>Registers Ctrl+Alt+Break; if it's taken, keeps retrying in the background.</summary>
     public bool RegisterBuiltIn()
@@ -70,6 +75,31 @@ public sealed class HotkeyManager : IDisposable
             retry.Tick += (_, _) => RegisterBuiltIn();
         }
         retry.Start();
+        return false;
+    }
+
+    /// <summary>Registers Ctrl+Alt+U (UNS-T35), the same permanent-and-retried way as <see cref="RegisterBuiltIn"/>,
+    /// independent of the user's own configurable extra hotkey (<see cref="RegisterCurrent"/>).</summary>
+    public bool RegisterBuiltInExtra()
+    {
+        if (BuiltInExtraActive) return true;
+        if (Register(BuiltInExtraId, BuiltInExtraCancelId, HotkeyGesture.BuiltInExtra))
+        {
+            retryExtra?.Stop();
+            builtInExtraFailureReported = false;
+            return true;
+        }
+        if (!builtInExtraFailureReported)
+        {
+            builtInExtraFailureReported = true;
+            RegistrationFailed?.Invoke(HotkeyGesture.BuiltInExtra);
+        }
+        if (retryExtra is null)
+        {
+            retryExtra = new DispatcherTimer { Interval = RetryInterval };
+            retryExtra.Tick += (_, _) => RegisterBuiltInExtra();
+        }
+        retryExtra.Start();
         return false;
     }
 
@@ -122,6 +152,7 @@ public sealed class HotkeyManager : IDisposable
     public void Dispose()
     {
         retry?.Stop();
+        retryExtra?.Stop();
         foreach (var id in registered.ToList()) Release(id);
         source.RemoveHook(WndProc);
         source.Dispose();

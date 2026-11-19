@@ -47,6 +47,7 @@ public partial class App : Application
         trayIcon = new TrayIconService(settingsService, hotkeyManager, runner, exePath);
         hotkeyManager.HotkeyPressed += trayIcon.RunNow;
         hotkeyManager.RegisterBuiltIn(); // Ctrl+Alt+Break, always on
+        hotkeyManager.RegisterBuiltInExtra(); // Ctrl+Alt+U, always on (UNS-T35)
 
         trayIcon.PrepareStartup();
 

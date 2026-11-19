@@ -13,6 +13,11 @@ public readonly record struct HotkeyGesture(ModifierKeys Modifiers, Key Key)
     /// <summary>Ctrl+Alt+Break: always registered, whatever the settings say (UNS-T32).</summary>
     public static readonly HotkeyGesture BuiltIn = new(ModifierKeys.Control | ModifierKeys.Alt, Key.Pause);
 
+    /// <summary>Ctrl+Alt+U: a second permanent hotkey, registered alongside <see cref="BuiltIn"/> regardless of
+    /// settings (UNS-T35) - independent of the one extra hotkey the user can still set themselves
+    /// (<c>TaskbarSettings.HotkeyGesture</c>).</summary>
+    public static readonly HotkeyGesture BuiltInExtra = new(ModifierKeys.Control | ModifierKeys.Alt, Key.U);
+
     private static readonly (ModifierKeys Flag, string Token)[] ModifierOrder =
     [
         (ModifierKeys.Control, "Control"),

@@ -65,6 +65,14 @@ public class HotkeyGestureTests
     }
 
     [Test]
+    public void BuiltInExtra_is_Ctrl_Alt_U_and_distinct_from_BuiltIn()
+    {
+        Assert.That(HotkeyGesture.BuiltInExtra.ToDisplayString(), Is.EqualTo("Ctrl+Alt+U"));
+        Assert.That(HotkeyGesture.TryParse("Control+Alt+U", out var g) && g == HotkeyGesture.BuiltInExtra, Is.True);
+        Assert.That(HotkeyGesture.BuiltInExtra, Is.Not.EqualTo(HotkeyGesture.BuiltIn));
+    }
+
+    [Test]
     public void A_lone_digit_means_that_digit_key_not_the_enum_value()
     {
         Assert.That(HotkeyGesture.TryParse("Control+Alt+1", out var g), Is.True);

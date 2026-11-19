@@ -1,27 +1,84 @@
-# /unstuck - recover a Windows desktop that has stopped responding to clicks.
-#
-# 1. Releases stuck input: cancels any window's mouse capture, releases held mouse buttons and
-#    Shift/Ctrl/Alt/Win keys (each side separately, plus any other key Windows reports held, and Sticky Keys
-#    latches), reports which keys were held - including a gamepad button whose release never arrived, which only
-#    the controller can clear - clicks only a left button still reported stuck down (never the right: a right-click pastes in a terminal), and nudges the cursor so hover state
-#    (e.g. the i-beam over a text field) gets recomputed.
-# 2. Kills what has gone off the rails: windowed apps still "Not Responding" after a re-check,
-#    a runaway memory hog, a runaway CPU hog. System processes, Explorer, Claude, terminals and
-#    shells are never killed.
-# 3. Restarts Explorer if it's hung (or always, with -Explorer).
-# 4. Restarts DisplayFusion's desktop app: its system-wide mouse hook is a known way for every
-#    click to die while the keyboard still works. (Its Windows service can't hook the desktop and
-#    needs admin to stop, so it's left alone.) With -Hooks, PowerToys - FancyZones, Always On Top
-#    and the mouse utilities all hook the mouse - is restarted too.
-# 5. With -Overlays, also closes overlay apps that can sit invisibly on top and swallow clicks.
-#
-# -Check reports only and changes nothing.
+<#
+.SYNOPSIS
+    Recover a Windows desktop that has stopped responding to clicks.
+
+.DESCRIPTION
+    1. Releases stuck input: cancels any window's mouse capture, releases held mouse buttons and
+       Shift/Ctrl/Alt/Win keys (each side separately, plus any other key Windows reports held, and Sticky Keys
+       latches), reports which keys were held - including a gamepad button whose release never arrived, which only
+       the controller can clear - clicks only a left button still reported stuck down (never the right: a
+       right-click pastes in a terminal), and nudges the cursor so hover state (e.g. the i-beam over a text field)
+       gets recomputed.
+    2. Kills what has gone off the rails: windowed apps still "Not Responding" after a re-check,
+       a runaway memory hog (over 40% of RAM, or the biggest when free RAM is under 5%), a runaway CPU
+       hog (over 70% of the whole machine). System processes, Explorer, Claude, terminals,
+       shells, Task Manager and whatever launched this script are never killed.
+    3. Restarts Explorer if it's hung or missing (or always, with -Explorer).
+    4. Restarts DisplayFusion's desktop app: its system-wide mouse hook is a known way for every
+       click to die while the keyboard still works. (Its Windows service can't hook the desktop and
+       needs admin to stop, so it's left alone.) With -Hooks, PowerToys - FancyZones, Always On Top
+       and the mouse utilities all hook the mouse - is restarted too.
+    5. With -Overlays, also closes overlay apps that can sit invisibly on top and swallow clicks.
+
+    The report is printed and also saved to %LOCALAPPDATA%\MindAttic\Unstuck\last-run.txt (and appended
+    to history.log in the same folder), so a run started from the tray hotkey can be read afterwards.
+
+.PARAMETER Check
+    Report only: list what would be released, killed or restarted, and change nothing.
+
+.PARAMETER Overlays
+    Also close overlay apps that can swallow clicks (Overwolf, Steam/NVIDIA/Xbox Game Bar overlays, Discord hook).
+
+.PARAMETER Explorer
+    Force-restart Explorer even if it looks healthy.
+
+.PARAMETER Hooks
+    Also restart PowerToys, whose FancyZones / Always On Top / mouse utilities hook the mouse.
+
+.PARAMETER NoLog
+    Don't save the report to %LOCALAPPDATA%\MindAttic\Unstuck.
+
+.PARAMETER Mode
+    The same options as plain words, for .bat files and shortcuts: check, overlays, explorer, hooks,
+    all (= overlays + explorer + hooks), nolog, help.
+
+.EXAMPLE
+    powershell -NoProfile -ExecutionPolicy Bypass -File unstuck.ps1
+
+.EXAMPLE
+    powershell -NoProfile -ExecutionPolicy Bypass -File unstuck.ps1 -Check
+
+.EXAMPLE
+    powershell -NoProfile -ExecutionPolicy Bypass -File unstuck.ps1 -Overlays -Explorer
+
+.EXAMPLE
+    unstuck.bat check explorer
+#>
+#Requires -Version 5.1
+[CmdletBinding()]
 param(
     [switch]$Check,
     [switch]$Overlays,
     [switch]$Explorer,
-    [switch]$Hooks
+    [switch]$Hooks,
+    [switch]$NoLog,
+    # Plain words work too, so a .bat file or shortcut can say "unstuck.bat check explorer".
+    [Parameter(ValueFromRemainingArguments)]
+    [string[]]$Mode = @()
 )
+
+foreach ($word in $Mode) {
+    switch ($word.TrimStart('-', '/').ToLowerInvariant()) {
+        'check'    { $Check = [switch]$true }
+        'overlays' { $Overlays = [switch]$true }
+        'explorer' { $Explorer = [switch]$true }
+        'hooks'    { $Hooks = [switch]$true }
+        'all'      { $Overlays = [switch]$true; $Explorer = [switch]$true; $Hooks = [switch]$true }
+        'nolog'    { $NoLog = [switch]$true }
+        { $_ -in 'help', '?', 'h' } { Get-Help $PSCommandPath -Detailed; exit 0 }
+        default    { Write-Host "Unknown option '$word'. Use: check, overlays, explorer, hooks, all (or nothing for the default recovery)." -ForegroundColor Red; exit 2 }
+    }
+}
 
 $ErrorActionPreference = 'Continue'
 $actions = New-Object System.Collections.Generic.List[string]
@@ -33,7 +90,8 @@ $protected = @(
     'audiodg', 'sihost', 'ctfmon', 'spoolsv', 'taskhostw', 'RuntimeBroker', 'StartMenuExperienceHost',
     'ShellExperienceHost', 'SearchHost', 'TextInputHost', 'ApplicationFrameHost', 'SystemSettings',
     'LockApp', 'explorer', 'claude', 'node', 'WindowsTerminal', 'OpenConsole', 'conhost',
-    'powershell', 'pwsh', 'bash', 'cmd', 'Code', 'devenv', 'MsMpEngCP', 'WmiPrvSE', 'dllhost'
+    'powershell', 'pwsh', 'bash', 'cmd', 'Code', 'devenv', 'MsMpEngCP', 'WmiPrvSE', 'dllhost',
+    'Taskmgr', 'UnstuckTaskbar', 'LogonUI', 'consent'
 )
 $overlayApps = @('Overwolf', 'OverwolfBrowser', 'GameOverlayUI', 'NVIDIA Overlay', 'GameBar', 'GameBarFTServer', 'DiscordHookHelper64', 'DiscordHookHelper')
 
@@ -167,12 +225,13 @@ $culprits = @{}
 foreach ($p in $procs | Where-Object { $_.MainWindowHandle -ne 0 -and -not $_.Responding -and $hungFirst -contains $_.Id }) {
     if (-not (IsProtected $p)) { $culprits[$p.Id] = "$($p.Name) (not responding)" }
 }
-# Memory: one process over 40% of RAM, or the biggest when free RAM is under 10%.
+# Memory: one process over 40% of RAM, or the biggest when free RAM is under 5% (at 10% a busy machine with a VM
+# or a big build open qualified, and its biggest process was killed while nothing was actually wrong).
 $byMem = $procs | Where-Object { -not (IsProtected $_) } | Sort-Object WorkingSet64 -Descending
 $top = $byMem | Select-Object -First 1
 if ($top) {
     $topMB = [math]::Round($top.WorkingSet64 / 1MB)
-    if ($topMB -gt $totalMB * 0.4 -or $freeMB -lt $totalMB * 0.1) { $culprits[$top.Id] = "$($top.Name) (using $topMB MB of RAM)" }
+    if ($topMB -gt $totalMB * 0.4 -or $freeMB -lt $totalMB * 0.05) { $culprits[$top.Id] = "$($top.Name) (using $topMB MB of RAM)" }
 }
 # CPU: over 70% of the whole machine across the sample.
 foreach ($p in $procs) {
@@ -220,30 +279,57 @@ if ($Hooks) {
 
 # ---- 5. Overlays ----
 if ($Overlays) {
-    foreach ($p in $procs | Where-Object { $overlayApps -contains $_.Name -and $_.SessionId -eq $mySession }) { Act "close overlay $($p.Name) [pid $($p.Id)]" { Stop-Process -Id $p.Id -Force } }
+    foreach ($g in $procs | Where-Object { $overlayApps -contains $_.Name -and $_.SessionId -eq $mySession } | Group-Object Name) {
+        $n = $g.Count
+        Act "close overlay $($g.Name)$(if ($n -gt 1) { " ($n processes)" })" { $g.Group | Stop-Process -Force }
+    }
 }
 
 # ---- Report ----
-"RAM: $freeMB MB free of $totalMB MB"
-"Top memory:"
-$procs | Sort-Object WorkingSet64 -Descending | Select-Object -First 6 | ForEach-Object { "  {0,-24} {1,6} MB  pid {2}" -f $_.Name, [math]::Round($_.WorkingSet64 / 1MB), $_.Id }
-"Top CPU (2 s sample):"
-$cpuPct.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 5 | ForEach-Object { $p = $procs | Where-Object Id -eq $_.Key | Select-Object -First 1; "  {0,-24} {1,5}%  pid {2}" -f $p.Name, $_.Value, $_.Key }
-$stillHung = $procs | Where-Object { $_.MainWindowHandle -ne 0 -and -not $_.Responding } | ForEach-Object Name
-if ($stillHung) { "Not responding: $($stillHung -join ', ')" }
-$runningOverlays = $procs | Where-Object { $overlayApps -contains $_.Name } | ForEach-Object Name | Sort-Object -Unique
-if ($runningOverlays -and -not $Overlays) { "Overlay apps running (can swallow clicks; '/unstuck overlays' closes them): $($runningOverlays -join ', ')" }
-"Keys held before: " + $(if ($heldBefore) { ($heldBefore.Name) -join ', ' } else { 'none' })
-"Keys still held:  " + $(if ($heldAfter) { ($heldAfter.Name) -join ', ' } else { 'none' })
-$pads = @($heldAfter | Where-Object { $_.Vk -ge 0xC3 -and $_.Vk -le 0xDA })
-if ($pads) {
-    # Gamepad keys come from the controller's driver, not the keyboard stream: only that controller can release them.
-    "STUCK GAMEPAD INPUT: Windows still thinks $(($pads.Name) -join ', ') is held - its release never arrived, and injected"
-    "  input can't clear a gamepad key. Press and release it on the controller (try each one that's on), or switch the"
-    "  controller off/unplug it. Connected: " + ((Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue |
-        Where-Object { $_.Class -in 'XboxComposite', 'HIDClass', 'MEDIA' -and $_.FriendlyName -match 'Xbox|DualSense|DualShock|Wireless Controller|game controller' } |
-        ForEach-Object FriendlyName | Sort-Object -Unique) -join ', ')
+$report = @(& {
+    "RAM: $freeMB MB free of $totalMB MB"
+    "Top memory:"
+    $procs | Sort-Object WorkingSet64 -Descending | Select-Object -First 6 | ForEach-Object { "  {0,-24} {1,6} MB  pid {2}" -f $_.Name, [math]::Round($_.WorkingSet64 / 1MB), $_.Id }
+    "Top CPU (2 s sample):"
+    $cpuPct.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 5 | ForEach-Object { $p = $procs | Where-Object Id -eq $_.Key | Select-Object -First 1; "  {0,-24} {1,5}%  pid {2}" -f $p.Name, $_.Value, $_.Key }
+    $stillHung = $procs | Where-Object { $_.MainWindowHandle -ne 0 -and -not $_.Responding } | ForEach-Object Name
+    if ($stillHung) { "Not responding: $($stillHung -join ', ')" }
+    $runningOverlays = $procs | Where-Object { $overlayApps -contains $_.Name } | ForEach-Object Name | Sort-Object -Unique
+    if ($runningOverlays -and -not $Overlays) { "Overlay apps running (can swallow clicks; '/unstuck overlays' closes them): $($runningOverlays -join ', ')" }
+    "Keys held before: " + $(if ($heldBefore) { ($heldBefore.Name) -join ', ' } else { 'none' })
+    "Keys still held:  " + $(if ($heldAfter) { ($heldAfter.Name) -join ', ' } else { 'none' })
+    $pads = @($heldAfter | Where-Object { $_.Vk -ge 0xC3 -and $_.Vk -le 0xDA })
+    if ($pads) {
+        # Gamepad keys come from the controller's driver, not the keyboard stream: only that controller can release them.
+        "STUCK GAMEPAD INPUT: Windows still thinks $(($pads.Name) -join ', ') is held - its release never arrived, and injected"
+        "  input can't clear a gamepad key. Press and release it on the controller (try each one that's on), or switch the"
+        "  controller off/unplug it. Connected: " + ((Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue |
+            Where-Object { $_.Class -in 'XboxComposite', 'HIDClass', 'MEDIA' -and $_.FriendlyName -match 'Xbox|DualSense|DualShock|Wireless Controller|game controller' } |
+            ForEach-Object FriendlyName | Sort-Object -Unique) -join ', ')
+    }
+    "Actions:"
+    if ($actions.Count -eq 0) { "  none" } else { $actions | ForEach-Object { "  $_" } }
+    if ($culprits.Count -eq 0) { "No runaway process found." }
+})
+$report
+
+# Saved so a run from the tray hotkey (which only shows a balloon) can be read in full afterwards.
+if (-not $NoLog -and $env:LOCALAPPDATA) {
+    try {
+        $logDir = Join-Path $env:LOCALAPPDATA 'MindAttic\Unstuck'
+        New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+        $switches = @(@{ Check = $Check; Overlays = $Overlays; Explorer = $Explorer; Hooks = $Hooks }.GetEnumerator() |
+            Where-Object { $_.Value } | ForEach-Object { "-$($_.Key)" } | Sort-Object)
+        $stamp = "Unstuck run $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" + $(if ($switches) { " ($($switches -join ' '))" } else { '' })
+        $text = (@($stamp, '') + $report) -join "`r`n"
+        [IO.File]::WriteAllText((Join-Path $logDir 'last-run.txt'), $text + "`r`n")
+        # Keep the history bounded: past 1 MB, drop the older half (cut at a run boundary).
+        $history = Join-Path $logDir 'history.log'
+        if ((Test-Path $history) -and (Get-Item $history).Length -gt 1MB) {
+            $old = [IO.File]::ReadAllText($history)
+            $cut = $old.IndexOf("`r`n===== ", [int]($old.Length / 2))
+            [IO.File]::WriteAllText($history, $(if ($cut -gt 0) { $old.Substring($cut + 2) } else { '' }))
+        }
+        [IO.File]::AppendAllText($history, "===== $text`r`n`r`n")
+    } catch { Write-Warning "Couldn't save the report: $($_.Exception.Message)" }
 }
-"Actions:"
-if ($actions.Count -eq 0) { "  none" } else { $actions | ForEach-Object { "  $_" } }
-if ($culprits.Count -eq 0) { "No runaway process found." }

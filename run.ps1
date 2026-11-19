@@ -1,8 +1,10 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Deploys Unstuck to C:\Apps\Unstuck\ and optionally runs it. The one script for
-    packaging and launching Unstuck outside Claude Code.
+    Installs (deploys) Unstuck to C:\Apps\Unstuck\ and optionally runs it. This is the INSTALLER;
+    unstuck.ps1 is the recovery itself. install.bat in the repo root runs this script;
+    unstuck.bat runs the recovery directly with no install. (The name run.ps1 is the
+    workspace-wide convention the /deploy command looks for.)
 
 .DESCRIPTION
     Unstuck is a plain PowerShell script, not a build - "deploying" means copying

@@ -23,10 +23,11 @@ latches), lists the keys held before and after, releases all mouse buttons, send
 still reports stuck down (never a blind click, and never the right button: three blind right-clicks once pasted the
 clipboard into the terminal prompt), and nudges the cursor so hover state (the i-beam) recomputes; kills windowed apps still
 "Not Responding" after a 2-second re-check, any process over 40% of RAM (or the biggest when free
-RAM is under 10%), and any process over 70% CPU; restarts DisplayFusion's desktop app if it's
+RAM is under 5%), and any process over 70% CPU; restarts DisplayFusion's desktop app if it's
 running (its global mouse hook is a known cause of every click dying while the keyboard works -
 the user has seen exiting it fix this); restarts Explorer if it's hung or missing. It
-never kills system processes, Explorer (except restarting it), Claude, terminals or shells.
+never kills system processes, Explorer (except restarting it), Claude, terminals, shells, Task Manager or whatever
+launched it. The full report is also saved to `%LOCALAPPDATA%\MindAttic\Unstuck\last-run.txt` (history in `history.log`).
 
 Then report in a few lines: what was killed or restarted, the keys still held, and the RAM / top-process numbers.
 If it prints STUCK GAMEPAD INPUT, lead with that: a gamepad button whose release never arrived (seen 2026-10-16:

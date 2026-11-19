@@ -1,3 +1,4 @@
+using System.IO;
 using NUnit.Framework;
 using UnstuckTaskbar.Recovery;
 
@@ -74,6 +75,29 @@ public class UnstuckRunnerTests
         var summary = UnstuckRunner.ExtractSummary(SampleReportStuckGamepad);
 
         Assert.That(summary, Does.StartWith("STUCK GAMEPAD INPUT"));
+    }
+
+    [Test]
+    public void NeedsAttention_flags_a_stuck_gamepad_or_a_held_key()
+    {
+        Assert.That(UnstuckRunner.NeedsAttention(SampleReportStuckGamepad), Is.True);
+        Assert.That(UnstuckRunner.NeedsAttention("Keys still held:  Left Shift\n"), Is.True);
+        Assert.That(UnstuckRunner.NeedsAttention(SampleReportNoActions), Is.False);
+    }
+
+    [Test]
+    public void Switches_map_each_option_to_its_script_switch_in_a_stable_order()
+    {
+        Assert.That(UnstuckRunner.Switches(RecoveryOptions.None), Is.Empty);
+        Assert.That(UnstuckRunner.Switches(RecoveryOptions.Overlays | RecoveryOptions.Check | RecoveryOptions.Explorer | RecoveryOptions.Hooks),
+            Is.EqualTo(new[] { "-Check", "-Explorer", "-Hooks", "-Overlays" }));
+    }
+
+    [Test]
+    public void Reports_live_under_LocalAppData_MindAttic_Unstuck()
+    {
+        Assert.That(UnstuckRunner.LastReportPath, Does.EndWith(Path.Combine("MindAttic", "Unstuck", "last-run.txt")));
+        Assert.That(UnstuckRunner.HistoryPath, Does.EndWith(Path.Combine("MindAttic", "Unstuck", "history.log")));
     }
 
     [Test]

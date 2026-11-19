@@ -48,3 +48,4 @@ _Nothing recorded yet._
 | UNS-T25 | 2026-11-10 | chore | closed | Crash recovery / fleet sync: commit the regenerated docs/USER_STORIES.md left uncommitted after other tickets closed elsewhere | — |
 | UNS-T26 | 2026-11-10 | chore | closed | Adopt the shared docs-site pipeline: turn on GitHub Pages | — |
 | UNS-T27 | 2026-11-17 | docs | closed | Update USER_STORIES.md | — |
+| UNS-T28 | 2026-11-18 | feature | open | User request 2026-11-18: improve Unstuck in every way possible (script, tray app, run.ps1, repo hygiene), write the README and the GitHub Pages docs | — |

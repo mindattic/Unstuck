@@ -45,12 +45,22 @@ public sealed class TrayIconService : IDisposable
         icon.BalloonTipClicked += (_, _) => { if (icon.Tag is true) OpenFile(UnstuckRunner.LastReportPath); };
         UpdateTooltip();
 
-        hotkeyManager.RegistrationFailed += gesture =>
-            ShowBalloon("Hotkey unavailable", $"{gesture.ToDisplayString()} is already used by another app. Pick another one in Settings.", Forms.ToolTipIcon.Warning);
+        hotkeyManager.RegistrationFailed += gesture => ShowBalloon("Hotkey unavailable",
+            gesture == HotkeyGesture.BuiltIn
+                ? $"{gesture.ToDisplayString()} is held by another app right now. Unstuck keeps trying and takes it as soon as it's free."
+                : $"{gesture.ToDisplayString()} is already used by another app. Pick another one in Settings.",
+            Forms.ToolTipIcon.Warning);
     }
 
-    private string CurrentHotkeyText() =>
-        HotkeyGesture.TryParse(settings.Load().HotkeyGesture, out var gesture) ? gesture.ToDisplayString() : "no hotkey set";
+    /// <summary>"Ctrl+Alt+Break", plus the extra hotkey from the settings when there is one.</summary>
+    private string CurrentHotkeyText()
+    {
+        var text = HotkeyGesture.BuiltIn.ToDisplayString();
+        if (!hotkeyManager.BuiltInActive) text += " (waiting - in use by another app)";
+        if (HotkeyGesture.TryParse(settings.Load().HotkeyGesture, out var extra) && extra != HotkeyGesture.BuiltIn)
+            text += " or " + extra.ToDisplayString();
+        return text;
+    }
 
     public void UpdateTooltip() => SetTooltip($"Unstuck - {CurrentHotkeyText()} runs recovery");
 

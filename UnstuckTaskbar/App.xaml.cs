@@ -46,6 +46,7 @@ public partial class App : Application
         hotkeyManager = new HotkeyManager();
         trayIcon = new TrayIconService(settingsService, hotkeyManager, runner, exePath);
         hotkeyManager.HotkeyPressed += trayIcon.RunNow;
+        hotkeyManager.RegisterBuiltIn(); // Ctrl+Alt+Break, always on
 
         trayIcon.PrepareStartup();
 

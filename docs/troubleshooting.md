@@ -4,7 +4,7 @@
 
 The keyboard almost always still works:
 
-- **Tray app installed:** press your hotkey.
+- **Tray app installed:** press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Break</kbd>.
 - **Otherwise:** press <kbd>Win</kbd>+<kbd>R</kbd>, type the full path to `unstuck.bat` (for example
   `D:\Projects\MindAttic\Unstuck\unstuck.bat`) and press <kbd>Enter</kbd>. If it's installed, `C:\Apps\Unstuck\run.bat`
   works too; press <kbd>2</kbd> for *Run*.
@@ -47,8 +47,8 @@ preview what would happen.
 
 | Symptom | Fix |
 |---|---|
-| "Hotkey unavailable" balloon | Another app owns that shortcut. Pick a different one in Settings. |
-| The hotkey does nothing | Make sure it's set (the first line of the tray menu shows it) and the tray icon is running. |
+| "Hotkey unavailable" balloon | Another app holds that shortcut. For Ctrl+Alt+Break, Unstuck keeps retrying and takes it once it's free; for the extra hotkey, pick a different one in Settings. |
+| Ctrl+Alt+Break does nothing | Check the tray icon is running; the first line of its menu shows the active hotkeys. In a Remote Desktop window, Ctrl+Alt+Break toggles full screen there instead. |
 | "unstuck.ps1 not found" | Run `install.bat` again; the installed script is missing from `C:\Apps\Unstuck\`. |
 | "MindAttic Vault isn't installed" | Edit `%LOCALAPPDATA%\MindAttic\UnstuckTaskbar\settings.json` instead (see [Tray app](tray-app.md)). |
 | The installer says the tray app is running in another session | Another signed-in user is running it and it locks the exe. Exit it there, then run `install.bat` again. |

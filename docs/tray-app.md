@@ -6,40 +6,46 @@ its own.
 
 ## Install
 
-Run **`install.bat`** from the repo root, or `run.ps1` from PowerShell. You need the .NET 10 SDK. The installer:
+**One click:** download **[Install-Unstuck.bat](https://github.com/mindattic/Unstuck/releases/latest/download/Install-Unstuck.bat)**
+and double-click it. It installs into `C:\Apps\Unstuck` (no admin rights, no .NET needed), adds an *Unstuck* desktop
+shortcut and Start menu folder, makes the tray app start when you sign in, and starts it. Run it again to update.
 
-1. copies `unstuck.ps1` to `C:\Apps\Unstuck\`,
-2. builds `UnstuckTaskbar.exe` into the same folder,
-3. writes `C:\Apps\Unstuck\run.bat`, a launcher menu with *Deploy & Run* and *Run*.
+From PowerShell, the same thing in one line:
 
-Running it again only rebuilds what changed; `install.bat -Force` rebuilds everything. If the tray app is running,
-the installer stops it to replace the exe and starts it again afterwards.
+```powershell
+irm https://raw.githubusercontent.com/mindattic/Unstuck/main/setup/Install-Unstuck.ps1 | iex
+```
 
-Start it from **Start menu → MindAttic → UnstuckTaskbar**, or run `C:\Apps\Unstuck\UnstuckTaskbar.exe`. The first
-time it runs, it adds that Start menu shortcut. Only one copy runs at a time.
+To uninstall, use **Start menu → Unstuck → Uninstall Unstuck**.
 
-To start it every time you sign in, use **MindAttic.Scheduler**: its `UnstuckTaskbar` job (in its `jobs.json`)
-starts the app at sign-in and restarts it if it crashes. Older versions of the app registered their own
-`\MindAttic\UnstuckTaskbar\Logon` task; the app now deletes that task when it starts, so the two don't compete.
+**From source** (developers): run `install.bat` in the repo root. It needs the .NET 10 SDK and the MindAttic
+packages, builds the tray app into `C:\Apps\Unstuck` and writes `C:\Apps\Unstuck\run.bat`, a launcher menu with
+*Deploy & Run* and *Run*. Running it again rebuilds only what changed; `install.bat -Force` rebuilds everything.
 
-## Set a hotkey
+Only one copy of the tray app runs at a time. With MindAttic.Scheduler installed, its `UnstuckTaskbar` job starts
+the app at sign-in instead of the Startup-folder shortcut. Older versions registered their own
+`\MindAttic\UnstuckTaskbar\Logon` task; the app now deletes it when it starts, so the two don't compete.
 
-There's no hotkey until you choose one. Right-click the tray icon and choose **Settings…** to open the *Unstuck* tab
-in MindAttic Vault, then set **Recovery hotkey**, for example:
+## The hotkey: Ctrl+Alt+Break
 
-- `Control+Alt+U`
-- `Control+Shift+F12`
-- `MediaPlayPause`, or another media or volume key, used on its own
+**Ctrl+Alt+Break** runs the recovery from anywhere, in any app, even when the mouse is dead. It's built in and always
+on; there's nothing to set up. Break shares a key with Pause, usually at the top right of the keyboard. On a laptop
+without one, it's often <kbd>Fn</kbd> plus another key; check your keyboard's labels.
 
-A key used on its own must be one with no other job: a media or volume key, or F13–F24. Anything else needs at
-least one modifier, so a plain letter or F5 can't be taken over system-wide. If another app already owns the
-shortcut, a balloon says so; pick a different one. Changes apply as soon as they're saved, without a restart.
+If another app is holding Ctrl+Alt+Break when Unstuck starts, a balloon says so. Unstuck keeps retrying every
+30 seconds and takes the shortcut as soon as it's free.
 
-Without MindAttic Vault, edit `%LOCALAPPDATA%\MindAttic\UnstuckTaskbar\settings.json` directly:
+### An extra hotkey (optional)
+
+Right-click the tray icon, choose **Settings…**, and set **Extra hotkey** to add a second shortcut, for example
+`Control+Shift+F12`, or a media key alone such as `MediaPlayPause`. A key used on its own must have no other job (a
+media or volume key, or F13–F24); anything else needs at least one modifier. Changes apply as soon as they're saved.
+
+Without MindAttic Vault, edit `%LOCALAPPDATA%\MindAttic\UnstuckTaskbar\settings.json`:
 
 ```json
 {
-  "HotkeyGesture": "Control+Alt+U"
+  "hotkeyGesture": "Control+Shift+F12"
 }
 ```
 
@@ -47,14 +53,14 @@ Without MindAttic Vault, edit `%LOCALAPPDATA%\MindAttic\UnstuckTaskbar\settings.
 
 | Item | Does |
 |---|---|
-| *Hotkey: …* | Shows the current hotkey. |
+| *Hotkey: …* | Shows the active hotkeys: Ctrl+Alt+Break, plus the extra one if set. |
 | **Run Unstuck Now** | Runs the default recovery. Double-clicking the icon does the same. |
 | Run With → Check Only | Reports what it would do and changes nothing. |
 | Run With → Restart Explorer / Restart PowerToys / Close Overlay Apps | Runs the recovery with that option added. |
 | Run With → Everything | Runs with all three options. |
 | Show Last Report | Opens the full report of the latest run. |
 | Show History | Opens the log of earlier runs. |
-| Settings… | Opens the hotkey setting. |
+| Settings… | Opens the extra-hotkey setting. |
 | Exit | Closes the tray app and frees the hotkey. |
 
 After each run, a balloon sums up what was done. **Click the balloon to open the full report.** A warning balloon
@@ -74,7 +80,6 @@ does nothing. A run that takes longer than 90 seconds is stopped.
 
 ## Uninstall
 
-1. Right-click the tray icon and choose **Exit**.
-2. Remove the `UnstuckTaskbar` job from MindAttic.Scheduler's `jobs.json`, or disable the
-   `\MindAttic\Scheduler\UnstuckTaskbar` task in Task Scheduler.
-3. Delete `C:\Apps\Unstuck\`, the *UnstuckTaskbar* Start menu shortcut and `%LOCALAPPDATA%\MindAttic\Unstuck*`.
+Use **Start menu → Unstuck → Uninstall Unstuck**. It stops the tray app and removes `C:\Apps\Unstuck` and every
+shortcut the installer made. Settings and reports in `%LOCALAPPDATA%\MindAttic` are kept. If MindAttic.Scheduler
+runs the app, also remove its `UnstuckTaskbar` job from its `jobs.json`.

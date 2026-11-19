@@ -20,15 +20,33 @@ Actions:
 No runaway process found.
 ```
 
-## Quick start
+## Install (one click)
 
-There's nothing to install. Clone or download this repo, then:
+1. Download **[Install-Unstuck.bat](https://github.com/mindattic/Unstuck/releases/latest/download/Install-Unstuck.bat)**.
+2. Double-click it. If Windows SmartScreen warns about an unrecognized app, choose **More info → Run anyway**.
+
+That's it. You don't need admin rights or .NET. It installs into `C:\Apps\Unstuck`, adds an **Unstuck** desktop
+shortcut, and starts a small tray app that starts again every time you sign in.
+
+**Whenever clicks stop working, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Break</kbd>.** It works from any app, and
+there's nothing to set up.
+
+Prefer PowerShell? This one line does the same:
+
+```powershell
+irm https://raw.githubusercontent.com/mindattic/Unstuck/main/setup/Install-Unstuck.ps1 | iex
+```
+
+To update, run the installer again. To remove Unstuck, use **Start menu → Unstuck → Uninstall Unstuck**.
+
+## Without installing
+
+Clone or download this repo, then:
 
 | You want to… | Do this |
 |---|---|
 | **Unstick the desktop right now** | Double-click **`unstuck.bat`**, or run `unstuck.bat` in cmd. |
 | See what it *would* do, changing nothing | `unstuck.bat check` |
-| Get a hotkey and tray icon so you never need a terminal | Run **`install.bat`** once (see [Tray app](docs/tray-app.md)). |
 
 If your mouse is dead, the keyboard still works: press <kbd>Win</kbd>+<kbd>R</kbd>, type the full path to
 `unstuck.bat` and press <kbd>Enter</kbd>.
@@ -78,8 +96,9 @@ Every run's report is also saved to `%LOCALAPPDATA%\MindAttic\Unstuck\last-run.t
 |---|---|---|
 | **`unstuck.bat`** | A double-clickable wrapper for `unstuck.ps1`. | Whenever the desktop is stuck. |
 | **`unstuck.ps1`** | **The recovery itself.** Everything above happens here. | Run it through `unstuck.bat`, the tray app or `/unstuck`. |
-| **`install.bat`** | A double-clickable wrapper for `run.ps1`. | Once, to install the tray app, and again to update it. |
-| **`run.ps1`** | **The installer.** It copies `unstuck.ps1` to `C:\Apps\Unstuck\` and builds the tray app there. It doesn't fix anything itself. | Through `install.bat`, or the `/deploy` command. Every MindAttic repo uses the name `run.ps1` for its deploy script. |
+| **`setup/Install-Unstuck.bat`** | **The one-click installer** for everyone. It downloads the latest release; no build needed. | Once, and again to update. |
+| **`install.bat`** | Builds and installs from source (a wrapper for `run.ps1`). Developers only: needs the .NET 10 SDK. | After changing the code. |
+| **`run.ps1`** | **The source installer.** It copies `unstuck.ps1` to `C:\Apps\Unstuck\` and builds the tray app there. It doesn't fix anything itself. | Through `install.bat`, or the `/deploy` command. Every MindAttic repo uses the name `run.ps1` for its deploy script. |
 
 In short: **`unstuck` fixes, `install`/`run` installs.**
 
@@ -87,13 +106,14 @@ After installing, `C:\Apps\Unstuck\` contains:
 
 - `unstuck.ps1`: the installed copy of the recovery.
 - `UnstuckTaskbar.exe`: the tray app.
-- `run.bat`: a launcher menu with two choices, *1) Deploy & Run* (update from this repo, then recover) and
-  *2) Run* (recover now).
+- `unstuck.bat`, which the **Unstuck** desktop shortcut runs (one-click install).
+- `run.bat`, from a source install only: a launcher menu with two choices, *1) Deploy & Run* (update from this repo,
+  then recover) and *2) Run* (recover now).
 
 ## Other ways to run it
 
 - **Tray app and global hotkey.** `UnstuckTaskbar.exe` sits in the notification area and runs the recovery when
-  you press your hotkey or double-click the icon. Its menu also has *Check only*, *Restart Explorer* and the other
+  you press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Break</kbd> or double-click the icon. Its menu also has *Check only*, *Restart Explorer* and the other
   options, plus the last report. See [Tray app](docs/tray-app.md).
 - **Claude Code.** `/unstuck`, `/unstuck check`, `/unstuck hooks`, `/unstuck overlays` and `/unstuck explorer`
   run the same script and summarize the result. The command is defined in [`commands/unstuck.md`](commands/unstuck.md).
@@ -118,7 +138,8 @@ Admin rights aren't needed. Run elevated, it still only touches your own session
 ```text
 unstuck.ps1            the recovery script
 unstuck.bat            double-click launcher for it
-run.ps1 / install.bat  installer: C:\Apps\Unstuck + tray app
+setup/                 one-click installer (Install-Unstuck.bat/.ps1) and release packaging
+run.ps1 / install.bat  build-from-source installer: C:\Apps\Unstuck + tray app
 commands/unstuck.md    the /unstuck Claude Code command
 UnstuckTaskbar/        tray app (WPF, .NET 10): hotkey, menu, balloon summaries
 UnstuckTaskbar.Tests/  NUnit tests for the tray app

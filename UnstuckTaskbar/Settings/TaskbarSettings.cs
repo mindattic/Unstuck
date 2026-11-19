@@ -13,7 +13,7 @@ namespace UnstuckTaskbar.Settings;
 public sealed class TaskbarSettings
 {
     /// <summary>The assigned hotkey, in <see cref="Hotkeys.HotkeyGesture"/>'s settings-string form, or null if unset.</summary>
-    [Setting("Recovery hotkey", Group = "Hotkey", Order = 1,
-        Help = "Global shortcut that runs /unstuck, written as modifiers and a key: \"Control+Alt+U\", \"Control+Shift+F12\", or a media key alone such as \"MediaPlayPause\". Leave empty for none.")]
+    [Setting("Extra hotkey", Group = "Hotkey", Order = 1,
+        Help = "Ctrl+Alt+Break always runs /unstuck. This adds a second shortcut, written as modifiers and a key: \"Control+Alt+U\", \"Control+Shift+F12\", or a media key alone such as \"MediaPlayPause\". Leave empty for none.")]
     public string? HotkeyGesture { get; set; }
 }

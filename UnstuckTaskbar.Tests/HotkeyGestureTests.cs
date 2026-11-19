@@ -57,6 +57,14 @@ public class HotkeyGestureTests
         Assert.That(UnstuckTaskbar.Startup.StartupRegistrar.IsDevBuild(exe), Is.EqualTo(expected));
 
     [Test]
+    public void BuiltIn_is_Ctrl_Alt_Break_and_Break_parses_as_Pause()
+    {
+        Assert.That(HotkeyGesture.BuiltIn.ToDisplayString(), Is.EqualTo("Ctrl+Alt+Break"));
+        Assert.That(HotkeyGesture.TryParse("Control+Alt+Break", out var g) && g == HotkeyGesture.BuiltIn, Is.True);
+        Assert.That(HotkeyGesture.TryParse(HotkeyGesture.BuiltIn.ToSettingsString(), out var r) && r == HotkeyGesture.BuiltIn, Is.True);
+    }
+
+    [Test]
     public void A_lone_digit_means_that_digit_key_not_the_enum_value()
     {
         Assert.That(HotkeyGesture.TryParse("Control+Alt+1", out var g), Is.True);

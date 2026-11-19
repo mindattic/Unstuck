@@ -102,7 +102,7 @@ public class LampSettingsTests
         var m = SettingsManifestBuilder.Build<TaskbarSettings>();
         Assert.That(m.AppId, Is.EqualTo(SettingsService.AppId));
         Assert.That(m.Scope, Is.EqualTo(SettingsManifest.LocalScope));
-        Assert.That(m.Fields.Select(f => f.Label), Is.EqualTo(new[] { "Recovery hotkey" }));
+        Assert.That(m.Fields.Select(f => f.Label), Is.EqualTo(new[] { "Extra hotkey" }));
         Assert.That(m.Fields.All(f => !string.IsNullOrWhiteSpace(f.Help)), Is.True);
         Assert.That(m.Credentials, Is.Empty);
     }
@@ -111,7 +111,7 @@ public class LampSettingsTests
     public void LoadOrSeed_OnAFreshMachine_SeedsTodaysDefaultsAndTheManifest()
     {
         var seeded = new SettingsService().LoadOrSeed();
-        Assert.That(seeded.HotkeyGesture, Is.Null);
+        Assert.That(seeded.HotkeyGesture, Is.Null, "Ctrl+Alt+Break is built in; the extra hotkey starts empty");
         Assert.That(File.Exists(Path.Combine(AppFolder, SettingsManifest.FileName)), Is.True);
     }
 

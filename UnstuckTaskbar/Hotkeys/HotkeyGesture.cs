@@ -89,7 +89,12 @@ public readonly record struct HotkeyGesture(ModifierKeys Modifiers, Key Key)
             if (!matched) return false;
         }
 
-        if (!Enum.TryParse<Key>(segments[^1], ignoreCase: true, out var key) || key == Key.None) return false;
+        // Enum.TryParse also accepts numbers ("1" would be Key value 1, Cancel; "9999" an undefined key). A lone digit
+        // means that digit key (WPF names them D0-D9); any other number is rejected.
+        var keyName = segments[^1];
+        if (keyName.Length == 1 && char.IsAsciiDigit(keyName[0])) keyName = "D" + keyName;
+        else if (keyName.All(char.IsAsciiDigit)) return false;
+        if (!Enum.TryParse<Key>(keyName, ignoreCase: true, out var key) || key == Key.None || !Enum.IsDefined(key)) return false;
 
         gesture = new HotkeyGesture(modifiers, key);
         return gesture.IsValid;

@@ -56,6 +56,19 @@ public class HotkeyGestureTests
     public void Dev_builds_are_detected(string exe, bool expected) =>
         Assert.That(UnstuckTaskbar.Startup.StartupRegistrar.IsDevBuild(exe), Is.EqualTo(expected));
 
+    [Test]
+    public void A_lone_digit_means_that_digit_key_not_the_enum_value()
+    {
+        Assert.That(HotkeyGesture.TryParse("Control+Alt+1", out var g), Is.True);
+        Assert.That(g.Key, Is.EqualTo(Key.D1));
+    }
+
+    [TestCase("Control+9999")]
+    [TestCase("Control+12")]
+    [TestCase("Control+-1")]
+    public void Numeric_key_names_are_rejected(string value) =>
+        Assert.That(HotkeyGesture.TryParse(value, out _), Is.False);
+
     [TestCase(null)]
     [TestCase("")]
     [TestCase("   ")]

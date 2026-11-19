@@ -28,8 +28,8 @@ No runaway process found.
 That's it. You don't need admin rights or .NET. It installs into `C:\Apps\Unstuck`, adds an **Unstuck** desktop
 shortcut, and starts a small tray app that starts again every time you sign in.
 
-**Whenever clicks stop working, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Break</kbd>.** It works from any app, and
-there's nothing to set up.
+**Whenever clicks stop working, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Break</kbd> or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd>.**
+Both work from any app, and there's nothing to set up.
 
 Prefer PowerShell? This one line does the same:
 
@@ -112,9 +112,9 @@ After installing, `C:\Apps\Unstuck\` contains:
 
 ## Other ways to run it
 
-- **Tray app and global hotkey.** `UnstuckTaskbar.exe` sits in the notification area and runs the recovery when
-  you press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Break</kbd> or double-click the icon. Its menu also has *Check only*, *Restart Explorer* and the other
-  options, plus the last report. See [Tray app](docs/tray-app.md).
+- **Tray app and global hotkeys.** `UnstuckTaskbar.exe` sits in the notification area and runs the recovery when
+  you press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Break</kbd>, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd>, or double-click the icon. Its menu also has *Check only*, *Restart Explorer* and the other
+  options, plus the last report, plus setting your own extra hotkey straight from the menu. See [Tray app](docs/tray-app.md).
 - **Claude Code.** `/unstuck`, `/unstuck check`, `/unstuck hooks`, `/unstuck overlays` and `/unstuck explorer`
   run the same script and summarize the result. The command is defined in [`commands/unstuck.md`](commands/unstuck.md).
 

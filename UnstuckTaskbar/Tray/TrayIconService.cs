@@ -46,18 +46,22 @@ public sealed class TrayIconService : IDisposable
         UpdateTooltip();
 
         hotkeyManager.RegistrationFailed += gesture => ShowBalloon("Hotkey unavailable",
-            gesture == HotkeyGesture.BuiltIn
+            gesture == HotkeyGesture.BuiltIn || gesture == HotkeyGesture.BuiltInExtra
                 ? $"{gesture.ToDisplayString()} is held by another app right now. Unstuck keeps trying and takes it as soon as it's free."
                 : $"{gesture.ToDisplayString()} is already used by another app. Pick another one in Settings.",
             Forms.ToolTipIcon.Warning);
     }
 
-    /// <summary>"Ctrl+Alt+Break", plus the extra hotkey from the settings when there is one.</summary>
+    /// <summary>"Ctrl+Alt+Break or Ctrl+Alt+U" (both permanent, UNS-T35), plus the user's own extra hotkey from
+    /// the settings when there is one and it isn't already one of the two permanent chords.</summary>
     private string CurrentHotkeyText()
     {
         var text = HotkeyGesture.BuiltIn.ToDisplayString();
         if (!hotkeyManager.BuiltInActive) text += " (waiting - in use by another app)";
-        if (HotkeyGesture.TryParse(settings.Load().HotkeyGesture, out var extra) && extra != HotkeyGesture.BuiltIn)
+        text += " or " + HotkeyGesture.BuiltInExtra.ToDisplayString();
+        if (!hotkeyManager.BuiltInExtraActive) text += " (waiting - in use by another app)";
+        if (HotkeyGesture.TryParse(settings.Load().HotkeyGesture, out var extra)
+            && extra != HotkeyGesture.BuiltIn && extra != HotkeyGesture.BuiltInExtra)
             text += " or " + extra.ToDisplayString();
         return text;
     }
@@ -140,6 +144,11 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add("Settings...", null, (_, _) => OpenSettings());
 
         menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add("Set Alternate Hotkey...", null, (_, _) => SetAlternateHotkey());
+        menu.Items.Add(new Forms.ToolStripMenuItem("Clear Alternate Hotkey", null, (_, _) => ClearAlternateHotkey())
+            { Enabled = !string.IsNullOrWhiteSpace(settings.Load().HotkeyGesture) });
+
+        menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => Application.Current.Shutdown());
     }
 
@@ -164,6 +173,25 @@ public sealed class TrayIconService : IDisposable
     {
         if (!VaultSettings.Open(SettingsService.AppId))
             ShowBalloon("MindAttic Vault isn't installed", $"Install MindAttic Vault to edit these settings, or edit {settings.FilePath}.");
+    }
+
+    /// <summary>Captures the user's one configurable extra hotkey straight from the tray menu (UNS-T34), instead
+    /// of typing a gesture string in Vault Settings. Saved the same way Vault Settings saves it, so the existing
+    /// settings-watcher (<see cref="SettingsService.Changed"/>, wired in App.xaml.cs) registers it immediately.</summary>
+    public void SetAlternateHotkey()
+    {
+        var capture = new HotkeyCaptureWindow();
+        if (capture.ShowDialog() != true || capture.Result is not { } gesture) return;
+        settings.Update(s => s.HotkeyGesture = gesture.ToSettingsString());
+        ShowBalloon("Alternate hotkey set", $"{gesture.ToDisplayString()} now runs recovery too.");
+    }
+
+    /// <summary>Removes the user's configurable extra hotkey without opening Settings; the two permanent ones
+    /// (Ctrl+Alt+Break, Ctrl+Alt+U) are untouched.</summary>
+    public void ClearAlternateHotkey()
+    {
+        settings.Update(s => s.HotkeyGesture = null);
+        ShowBalloon("Alternate hotkey cleared", "Ctrl+Alt+Break and Ctrl+Alt+U still run recovery.");
     }
 
     public void Dispose()

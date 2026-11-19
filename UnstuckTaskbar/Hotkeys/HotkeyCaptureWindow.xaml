@@ -1,0 +1,27 @@
+<Window x:Class="UnstuckTaskbar.Hotkeys.HotkeyCaptureWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Set Alternate Hotkey" Height="180" Width="380"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True"
+        Background="{DynamicResource MaChrome}" Foreground="{DynamicResource MaText}"
+        PreviewKeyDown="Window_PreviewKeyDown">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="Press the new key combination for the alternate hotkey (Esc to cancel)."
+                   TextWrapping="Wrap" Foreground="{DynamicResource MaMuted}" />
+        <TextBlock x:Name="CapturedText" Grid.Row="1" Text="..." FontSize="22" FontWeight="Bold"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <TextBlock x:Name="ErrorText" Grid.Row="2" TextWrapping="Wrap" Foreground="{DynamicResource MaBad}"
+                   Visibility="Collapsed" Margin="0,0,0,8" />
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="OkButton" Content="Set" Style="{StaticResource MaPrimaryButton}" Width="72"
+                    Margin="0,0,8,0" IsEnabled="False" Click="OkButton_Click" />
+            <Button Content="Cancel" Style="{StaticResource MaButton}" Width="72" IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</Window>

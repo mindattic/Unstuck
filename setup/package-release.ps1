@@ -63,8 +63,12 @@ Or in PowerShell: ``irm https://raw.githubusercontent.com/mindattic/Unstuck/main
 
 Docs: https://mindattic.github.io/Unstuck/
 "@
-    gh release view $tag --repo mindattic/Unstuck *> $null
-    if ($LASTEXITCODE -eq 0) {
+    # Windows PowerShell turns a native command's stderr into a terminating error under 'Stop'; "release not found"
+    # is an expected answer here, not a failure.
+    $ErrorActionPreference = 'Continue'
+    gh release view $tag --repo mindattic/Unstuck 2>&1 | Out-Null
+    $exists = $LASTEXITCODE -eq 0
+    if ($exists) {
         gh release upload $tag $zip (Join-Path $out 'Install-Unstuck.bat') --repo mindattic/Unstuck --clobber
     } else {
         gh release create $tag $zip (Join-Path $out 'Install-Unstuck.bat') --repo mindattic/Unstuck --title "Unstuck $version" --notes $notes --latest

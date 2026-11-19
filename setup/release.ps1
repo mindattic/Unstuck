@@ -31,21 +31,21 @@ $root = Split-Path -Parent $PSScriptRoot
 $proj = Join-Path $root 'UnstuckTaskbar\UnstuckTaskbar.csproj'
 $repo = 'mindattic/Unstuck'
 
-function Git {
+function Invoke-Git {
     # git reports progress on stderr; under 'Stop', Windows PowerShell would treat that as a failure.
     $ErrorActionPreference = 'Continue'
-    $o = & git -C $root @args 2>&1 | ForEach-Object { "$_" }
+    $o = & git.exe -C $root @args 2>&1 | ForEach-Object { "$_" }
     if ($LASTEXITCODE -ne 0) { throw "git $args failed: $o" }
     $o
 }
 
-if (Git status --porcelain) { throw 'Commit or stash your changes first.' }
-$branch = Git rev-parse --abbrev-ref HEAD
+if (Invoke-Git status --porcelain) { throw 'Commit or stash your changes first.' }
+$branch = Invoke-Git rev-parse --abbrev-ref HEAD
 if ($branch -ne 'main') { throw "Release from main (you are on $branch)." }
-try { Git fetch --tags --quiet | Out-Null } catch { Write-Host '  Offline: using local tags.' -ForegroundColor Yellow }
+try { Invoke-Git fetch --tags --quiet | Out-Null } catch { Write-Host '  Offline: using local tags.' -ForegroundColor Yellow }
 
 $current = [int](([xml](Get-Content $proj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1).Split('.')[0]
-$released = @(Git tag --list 'v*' | Where-Object { $_ -match '^v(\d+)$' } | ForEach-Object { [int]$_.Substring(1) })
+$released = @(Invoke-Git tag --list 'v*' | Where-Object { $_ -match '^v(\d+)$' } | ForEach-Object { [int]$_.Substring(1) })
 $n = if (($released -notcontains $current) -and -not ($released | Where-Object { $_ -ge $current })) { $current }
      else { [Math]::Max($current, ($released | Measure-Object -Maximum).Maximum) + 1 }
 $tag = "v$n"
@@ -57,15 +57,15 @@ if ($n -ne $current) {
     $text = [IO.File]::ReadAllText($proj)
     $text = [regex]::Replace($text, '<Version>[^<]*</Version>', "<Version>$n.0.0</Version>")
     [IO.File]::WriteAllText($proj, $text)
-    Git commit -am "Release $tag ($Ticket)" | Out-Null
+    Invoke-Git commit -am "Release $tag ($Ticket)" | Out-Null
 }
 
 & (Join-Path $PSScriptRoot 'build.ps1')
 $setup = Join-Path $root "artifacts\installer\Unstuck-Setup-$tag.exe"
 
-Git tag -a $tag -m "Unstuck $tag" | Out-Null
-Git push origin HEAD | Out-Null
-Git push origin $tag | Out-Null
+Invoke-Git tag -a $tag -m "Unstuck $tag" | Out-Null
+Invoke-Git push origin HEAD | Out-Null
+Invoke-Git push origin $tag | Out-Null
 
 # The active gh account may not be able to write to mindattic/; prefer the mindattic login when it's there.
 if (-not $env:GH_TOKEN) {

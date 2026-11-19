@@ -31,7 +31,7 @@ _Nothing recorded yet._
 | UNS-T8 | 2026-10-18 | fix | closed | Remove a duplicate UNS-T7 row accidentally hand-appended to the generated USER_STORIES.md | — |
 | UNS-T9 | 2026-10-18 | chore | open | Stop registering the UnstuckTaskbar Logon task in deploy/setup (job now in MindAttic.Scheduler M.SCHD-T9) | scheduled-task consolidation 2026-10-18 |
 | UNS-T10 | 2026-10-19 | chore | wont-do | Convert tracked source files to LF line endings via .gitattributes, per HOUSE-LAW-13 (low priority) | — |
-| UNS-T11 | 2026-10-20 | docs | open | Publish Unstuck docs to GitHub Pages via the shared Agency DocFX pipeline: run adopt-docs-site.ps1 (README.md as home page, docs/*.md as articles, API reference only where the code builds in CI), enable Pages with build_type=workflow, set the repo homepage URL, retire tools/build-readme.ps1 and README.htm, confirm the docs Actions run is green and https://mindattic.github.io/Unstuck/ returns 200. Depends on MAT-T8. Also write the missing README.md first, since it becomes the site's home page. | — |
+| UNS-T11 | 2026-10-20 | docs | closed | Publish Unstuck docs to GitHub Pages via the shared Agency DocFX pipeline: run adopt-docs-site.ps1 (README.md as home page, docs/*.md as articles, API reference only where the code builds in CI), enable Pages with build_type=workflow, set the repo homepage URL, retire tools/build-readme.ps1 and README.htm, confirm the docs Actions run is green and https://mindattic.github.io/Unstuck/ returns 200. Depends on MAT-T8. Also write the missing README.md first, since it becomes the site's home page. | a009af7 |
 | UNS-T12 | 2026-10-20 | chore | closed | Move to MindAttic.Components.Wpf 19.0.0 (Mc->Ma rename): bump the PackageReference and confirm the build; a scan found no Mc-prefixed style/class usages of its own to rename | c19e3d0 |
 | UNS-T13 | 2026-10-20 | chore | open | Bug hunt: run an exhaustive /bughunt over the whole repo and fix every real bug found (each fix under its own fix ticket), then hunt again; close this only when a full pass finds nothing | user request 2026-10-20: approved repo sweep gap-fill |
 | UNS-T14 | 2026-10-21 | docs | closed | Update USER_STORIES.md | — |
@@ -40,7 +40,7 @@ _Nothing recorded yet._
 | UNS-T17 | 2026-10-31 | feature | closed | LAMP: move Unstuck's app-level settings and keys to MindAttic.Vault.Desktop (manifest, LoadOrSeed, shared named keys, cog opens Vault) | 04c0434 LampSettingsTests (46/46) |
 | UNS-T18 | 2026-10-31 | chore | closed | Vault tab named after the repo: SettingsApp DisplayName 'Unstuck Taskbar' -> 'Unstuck' | M.VALT-T75 c686eaf |
 | UNS-T19 | 2026-10-31 | docs | closed | Update USER_STORIES.md | — |
-| UNS-T20 | 2026-11-02 | chore | open | Write README.md (none exists) so Unstuck can later adopt the MindAttic.Agency docs-site pipeline and publish to GitHub Pages (HOUSE-LAW-14) | — |
+| UNS-T20 | 2026-11-02 | chore | closed | Write README.md (none exists) so Unstuck can later adopt the MindAttic.Agency docs-site pipeline and publish to GitHub Pages (HOUSE-LAW-14) | a009af7 |
 | UNS-T21 | 2026-11-02 | fix | closed | Bughunt sweep, two passes: find and fix real bugs across tracked source (user request 2026-11-02) | — |
 | UNS-T22 | 2026-11-02 | fix | closed | Fix the open items the 2026-11-02 bughunt left for decision (run.ps1 stops UnstuckTaskbar only in current session; deploy) | — |
 | UNS-T23 | 2026-11-10 | chore | closed | Crash recovery: commit the command-catalog sync (.agent/commands/*.md) and regenerated docs/USER_STORIES.md left uncommitted by the session crash | — |
@@ -48,4 +48,4 @@ _Nothing recorded yet._
 | UNS-T25 | 2026-11-10 | chore | closed | Crash recovery / fleet sync: commit the regenerated docs/USER_STORIES.md left uncommitted after other tickets closed elsewhere | — |
 | UNS-T26 | 2026-11-10 | chore | closed | Adopt the shared docs-site pipeline: turn on GitHub Pages | — |
 | UNS-T27 | 2026-11-17 | docs | closed | Update USER_STORIES.md | — |
-| UNS-T28 | 2026-11-18 | feature | open | User request 2026-11-18: improve Unstuck in every way possible (script, tray app, run.ps1, repo hygiene), write the README and the GitHub Pages docs | — |
+| UNS-T28 | 2026-11-18 | feature | closed | User request 2026-11-18: improve Unstuck in every way possible (script, tray app, run.ps1, repo hygiene), write the README and the GitHub Pages docs | a009af7 |

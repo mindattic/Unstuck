@@ -12,7 +12,7 @@
     uninstall) and README.txt. Output goes to artifacts\release\.
 
 .PARAMETER Publish
-    Create the GitHub release v<Version> (from UnstuckTaskbar.csproj) with both files attached.
+    Create the GitHub release v<N> (N = the whole-number major of <Version> in UnstuckTaskbar.csproj) with both files attached.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File setup\package-release.ps1 -Publish
@@ -26,11 +26,18 @@ $out = Join-Path $root 'artifacts\release'
 $stage = Join-Path $out 'stage'
 $version = ([xml](Get-Content $proj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
 if (-not $version) { throw "No <Version> in $proj" }
+# Releases are whole numbers only: v1, v2, v3 (owner, 2026-11-18). The csproj keeps N.0.0 because .NET needs a
+# dotted assembly version; bump N by one for each release and leave the rest at 0.
+$parts = $version.Split('.')
+if (@($parts | Select-Object -Skip 1 | Where-Object { $_ -ne '0' }).Count -gt 0) {
+    throw "Version $version isn't a whole number. Set <Version> in $proj to N.0.0 (the next whole number)."
+}
+$version = $parts[0]
 
 if (Test-Path $out) { Remove-Item $out -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 
-Write-Host "  Publishing UnstuckTaskbar $version (self-contained, single file)" -ForegroundColor Cyan
+Write-Host "  Publishing UnstuckTaskbar v$version (self-contained, single file)" -ForegroundColor Cyan
 dotnet publish $proj -c Release -r win-x64 --self-contained true `
     /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:EnableCompressionInSingleFile=true `
     /p:DebugType=none -o (Join-Path $out 'publish') | Out-Host
@@ -40,7 +47,7 @@ Copy-Item (Join-Path $out 'publish\UnstuckTaskbar.exe') $stage
 Copy-Item (Join-Path $root 'unstuck.ps1'), (Join-Path $root 'unstuck.bat'), (Join-Path $PSScriptRoot 'Install-Unstuck.ps1') $stage
 Copy-Item (Join-Path $root 'assets\logo.ico') $stage
 @"
-Unstuck $version - recover a Windows desktop that stopped responding to clicks.
+Unstuck v$version - recover a Windows desktop that stopped responding to clicks.
 
   unstuck.bat            run the recovery now (double-click). Options: check, explorer, hooks, overlays, all
   UnstuckTaskbar.exe     tray icon; Ctrl+Alt+Break runs the recovery from anywhere
@@ -71,7 +78,7 @@ Docs: https://mindattic.github.io/Unstuck/
     if ($exists) {
         gh release upload $tag $zip (Join-Path $out 'Install-Unstuck.bat') --repo mindattic/Unstuck --clobber
     } else {
-        gh release create $tag $zip (Join-Path $out 'Install-Unstuck.bat') --repo mindattic/Unstuck --title "Unstuck $version" --notes $notes --latest
+        gh release create $tag $zip (Join-Path $out 'Install-Unstuck.bat') --repo mindattic/Unstuck --title "Unstuck v$version" --notes $notes --latest
     }
     if ($LASTEXITCODE -ne 0) { throw 'gh release failed' }
     Write-Host "  Published https://github.com/mindattic/Unstuck/releases/tag/$tag" -ForegroundColor Green

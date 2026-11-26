@@ -12,8 +12,9 @@ and run it. It installs per user into `%LOCALAPPDATA%\Programs\Unstuck` (no admi
 tray app start when you sign in, and starts it. Run a newer installer over the old one to update.
 
 **From source** (developers): run `install.bat` in the repo root. It needs the .NET 10 SDK and the MindAttic
-packages, builds the tray app into `C:\Apps\Unstuck` and writes `C:\Apps\Unstuck\run.bat`, a launcher menu with
-*Deploy & Run* and *Run*. Running it again rebuilds only what changed; `install.bat -Force` rebuilds everything.
+packages, builds the tray app into `R:\MindAttic\Apps\Unstuck\Debug` and `R:\MindAttic\Apps\Unstuck\Release` with
+the recovery script beside it, and starts the Release tray app again if it was running. `run.bat` in the repo root
+opens the full menu: *1) Redeploy*, *2) Run Debug*, *3) Run Release* (*13* is Deploy & Run).
 
 Only one copy of the tray app runs at a time. With MindAttic.Scheduler installed, its `UnstuckTaskbar` job starts
 the app at sign-in, and the installer doesn't add its own sign-in entry. Older versions registered their own

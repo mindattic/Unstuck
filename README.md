@@ -93,18 +93,17 @@ Every run's report is also saved to `%LOCALAPPDATA%\MindAttic\Unstuck\last-run.t
 | **`unstuck.bat`** | A double-clickable wrapper for `unstuck.ps1`. | Whenever the desktop is stuck. |
 | **`unstuck.ps1`** | **The recovery itself.** Everything above happens here. | Run it through `unstuck.bat`, the tray app or `/unstuck`. |
 | **`Unstuck-Setup-v<N>.exe`** | **The installer** for everyone, from [Releases](https://github.com/mindattic/Unstuck/releases/latest). Built from `setup/Unstuck.iss`. | Once, and again to update. |
-| **`install.bat`** | Builds and installs from source (a wrapper for `run.ps1`). Developers only: needs the .NET 10 SDK. | After changing the code. |
-| **`run.ps1`** | **The source installer.** It copies `unstuck.ps1` to `C:\Apps\Unstuck\` and builds the tray app there. It doesn't fix anything itself. | Through `install.bat`, or the `/deploy` command. Every MindAttic repo uses the name `run.ps1` for its deploy script. |
+| **`install.bat`** | Builds and installs from source (`run.ps1 -Redeploy`). Developers only: needs the .NET 10 SDK. | After changing the code. |
+| **`run.ps1`** / **`run.bat`** | **The source installer**, the MindAttic run menu: *1) Redeploy* builds the tray app into `R:\MindAttic\Apps\Unstuck\Debug` and `\Release` with `unstuck.ps1`, `unstuck.bat`, `logo.ico` and `commands\` beside it; *2) Run Debug* and *3) Run Release* start that copy's tray app (*13* is Deploy & Run). It doesn't fix anything itself. | Through `install.bat`, `run.bat`, or the `/deploy` command. Every MindAttic repo uses the name `run.ps1` for its deploy script. |
 
 In short: **`unstuck` fixes, `install`/`run` installs.**
 
-After installing, the install folder (`%LOCALAPPDATA%\Programs\Unstuck\` from the installer, `C:\Apps\Unstuck\` from source) contains:
+After installing, the install folder (`%LOCALAPPDATA%\Programs\Unstuck\` from the installer, `R:\MindAttic\Apps\Unstuck\Release\` from source) contains:
 
 - `unstuck.ps1`: the installed copy of the recovery.
 - `UnstuckTaskbar.exe`: the tray app.
 - `unstuck.bat`, which the **Unstuck** Start menu and desktop shortcuts run.
-- `run.bat`, from a source install only: a launcher menu with two choices, *1) Deploy & Run* (update from this repo,
-  then recover) and *2) Run* (recover now).
+- `commands\unstuck.md`, from a source install only: the `/unstuck` command.
 
 ## Other ways to run it
 
@@ -135,7 +134,8 @@ Admin rights aren't needed. Run elevated, it still only touches your own session
 unstuck.ps1            the recovery script
 unstuck.bat            double-click launcher for it
 setup/                 Windows installer (Unstuck.iss), build.ps1 and release.ps1
-run.ps1 / install.bat  build-from-source installer: C:\Apps\Unstuck + tray app
+run.ps1 / run.bat      the run menu: build and deploy to R:\MindAttic\Apps\Unstuck, run Debug or Release
+install.bat            build-from-source install (run.ps1 -Redeploy)
 commands/unstuck.md    the /unstuck Claude Code command
 UnstuckTaskbar/        tray app (WPF, .NET 10): hotkey, menu, balloon summaries
 UnstuckTaskbar.Tests/  NUnit tests for the tray app

@@ -1,214 +1,85 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Installs (deploys) Unstuck to C:\Apps\Unstuck\ and optionally runs it. This is the INSTALLER;
-    unstuck.ps1 is the recovery itself. install.bat in the repo root runs this script;
-    unstuck.bat runs the recovery directly with no install. (The name run.ps1 is the
-    workspace-wide convention the /deploy command looks for.)
+    Unstuck's run menu: 1) Redeploy  2) Run Debug  3) Run Release  (the MindAttic standard, MAT-T279).
 
 .DESCRIPTION
-    Unstuck is a plain PowerShell script, not a build - "deploying" means copying
-    unstuck.ps1 and assets\logo.ico into C:\Apps\Unstuck\, then writing
-    C:\Apps\Unstuck\run.bat (the desktop shortcut target). run.bat opens a menu
-    first: 1) Deploy & Run calls this run.ps1 -Force (by its baked-in source path),
-    then runs the deployed unstuck.ps1; 2) Run runs the deployed unstuck.ps1 without
-    calling this script (deploying first if nothing is deployed yet). Either way its
-    arguments pass through to unstuck.ps1. If the source repo is missing (moved/deleted),
-    Deploy & Run warns and runs whatever is already deployed instead.
+    The installer, not the recovery: unstuck.ps1 is the recovery itself, and unstuck.bat runs it with no install.
+    run.bat beside this file (Write-RunBat) opens the same menu on a double-click; install.bat runs 1) Redeploy.
+    Everything else lives in MindAttic.Agency\shared\deploy-lib.ps1's Invoke-AppRun:
+      1) Redeploy     build UnstuckTaskbar and deploy Debug and Release to R:\MindAttic\Apps\Unstuck\{Debug,Release},
+                      each with the payload beside the exe: unstuck.ps1, unstuck.bat, logo.ico and commands\
+      2) Run Debug    the dev/test tray app, in this console
+      3) Run Release  the standalone tray app, started the way a double-click would start it
+    Picks combine: 13 is Deploy & Run (redeploy, then run the installed Release copy).
 
-    run.bat is rewritten on EVERY run (deploying or not), so an existing install
-    picks up launcher changes without a redeploy; a stale deploy.bat from before the
-    deploy -> run rename is deleted. This script never prompts: agents
-    and /deploy run it non-interactively; the menu lives only in run.bat.
+    A redeploy stops the tray app running from the folder it replaces. A Release tray app that was running in this
+    desktop session is started again afterwards, so the hotkey isn't dead until the next logon; Release also runs
+    UnstuckTaskbar.exe --write-settings-manifest, so MindAttic Vault shows this app's tab.
 
-    Also publishes UnstuckTaskbar (the tray app + global hotkey, UNS-T2) into the same
-    C:\Apps\Unstuck\ folder as C:\Apps\Unstuck\UnstuckTaskbar.exe - a framework-dependent
-    single-file build (same flags as Automata/KdpPublish's run.ps1). This does not touch
-    run.bat or the plain script/icon copy above: the existing desktop shortcut keeps
-    running the one-shot recovery exactly as before: UnstuckTaskbar.exe is just an
-    additional file dropped alongside it. To replace the exe it stops only THIS desktop
-    session's UnstuckTaskbar (restarting it afterwards); if another signed-in user's copy
-    holds the exe, it is left running and the publish is skipped with a warning (exit 1).
-
-    Without -Force it only redeploys when the deployed script or icon is
-    missing, or the source is newer than the deployed copy, so an unchanged run is a
-    fast no-op. Same staleness logic, separately, for UnstuckTaskbar.exe against its
-    own project sources.
-
-.PARAMETER Force
-    Redeploy (script, icon and UnstuckTaskbar.exe) even if nothing looks changed.
-
-.PARAMETER Launch
-    After deploying, run the deployed unstuck.ps1 with any remaining arguments.
-
-.PARAMETER LauncherOnly
-    Only (re)write C:\Apps\Unstuck\run.bat, then exit: nothing copied, built or stopped.
+    Finding deploy-lib.ps1, first match wins:
+      1. $env:MINDATTIC_DEPLOY_LIB, the full path of a deploy-lib.ps1 (a dev copy, or a workspace elsewhere)
+      2. walking up from this folder, at each ancestor <dir>:
+           <dir>\MindAttic.Agency\shared\deploy-lib.ps1           (the canonical copy, current with main)
+           <dir>\mindattic-agent-standard\shared\deploy-lib.ps1   (the workspace-root mirror; lags until
+                                                                    sync-workspace-copy.ps1 runs)
+      3. the same two under D:\Projects\MindAttic (repos in another workspace root, e.g. D:\Projects\GunGreenEyes)
 
 .EXAMPLE
-    powershell -ExecutionPolicy Bypass -File run.ps1
-    powershell -ExecutionPolicy Bypass -File run.ps1 -Launch -Explorer
-    powershell -ExecutionPolicy Bypass -File run.ps1 -LauncherOnly
+    .\run.ps1                    the menu
+    .\run.ps1 -Redeploy          build and deploy both configs (install.bat)
+    .\run.ps1 -RunRelease        Run: the installed tray app, no build
+    .\run.ps1 -Redeploy -RunRelease             Deploy & Run
+    .\run.ps1 -Redeploy -DryRun  print what would be built and launched, do nothing
 #>
 param(
-    [switch]$Force,
-    [switch]$Launch,
-    [switch]$LauncherOnly,
-    [Parameter(ValueFromRemainingArguments)]
-    [string[]]$LaunchArgs = @()
+    [switch]$Redeploy,
+    [switch]$RunDebug,
+    [switch]$RunRelease,
+    [switch]$DryRun,
+    [Parameter(ValueFromRemainingArguments = $true)][string[]]$AppArgs = @()
 )
-
 $ErrorActionPreference = 'Stop'
-Set-StrictMode -Version Latest
 
-$repoDir     = $PSScriptRoot
-$srcScript   = Join-Path $repoDir 'unstuck.ps1'
-$srcIcon     = Join-Path $repoDir 'assets\logo.ico'
-$out         = 'C:\Apps\Unstuck'
-$deployScript = Join-Path $out 'unstuck.ps1'
-$deployIcon   = Join-Path $out 'logo.ico'
-$bat          = Join-Path $out 'run.bat'
-
-$taskbarProj = Join-Path $repoDir 'UnstuckTaskbar\UnstuckTaskbar.csproj'
-$taskbarDir  = Join-Path $repoDir 'UnstuckTaskbar'
-$taskbarExe  = Join-Path $out 'UnstuckTaskbar.exe'
-$taskbarSourceExt = @('.cs', '.csproj', '.xaml', '.json', '.props', '.targets', '.resx', '.ico')
-
-# cmd reads a running .bat by byte offset, and run.bat runs this script, so only rewrite a launcher
-# whose text actually changed, and always with CRLF so its goto labels resolve.
-function Write-BatIfChanged([string]$Path, [string]$Text) {
-    $Text = ($Text -replace "`r?`n", "`r`n").TrimEnd() + "`r`n"
-    if ((Test-Path -LiteralPath $Path) -and ([IO.File]::ReadAllText($Path) -ceq $Text)) { return }
-    [IO.File]::WriteAllText($Path, $Text, [Text.Encoding]::ASCII)
-}
-
-function Test-NeedsDeploy {
-    if (-not (Test-Path $deployScript)) { return $true }
-    if (-not (Test-Path $deployIcon)) { return $true }
-    $deployedTime = (Get-Item $deployScript).LastWriteTimeUtc
-    if ((Get-Item $srcScript).LastWriteTimeUtc -gt $deployedTime) { return $true }
-    if ((Test-Path $srcIcon) -and (Get-Item $srcIcon).LastWriteTimeUtc -gt $deployedTime) { return $true }
-    return $false
-}
-
-function Test-TaskbarNeedsPublish {
-    if ($Force -or -not (Test-Path $taskbarExe)) { return $true }
-    $exeTime = (Get-Item $taskbarExe).LastWriteTimeUtc
-    $props = Join-Path $repoDir 'Directory.Build.props'
-    if ((Test-Path $props) -and (Get-Item $props).LastWriteTimeUtc -gt $exeTime) { return $true }
-    $newer = Get-ChildItem -Path $taskbarDir -Recurse -File -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.FullName -notmatch '\\(bin|obj)\\' -and
-            ($taskbarSourceExt -contains $_.Extension.ToLowerInvariant()) -and
-            $_.LastWriteTimeUtc -gt $exeTime
-        } | Select-Object -First 1
-    return [bool]$newer
-}
-
-# Menu launcher (desktop shortcut target). Written on every run, deploying or not.
-function Write-Launcher {
-    $deployBat = @"
-@echo off
-title Unstuck
-rem Generated by $repoDir\run.ps1 - edits here are overwritten.
-set "DEPLOY_PS1=$repoDir\run.ps1"
-echo.
-echo   Unstuck
-echo     1^) Deploy ^& Run
-echo     2^) Run
-echo.
-choice /c 12 /n /m "  Choose 1 or 2: "
-if errorlevel 2 goto run
-:deploy
-if exist "%DEPLOY_PS1%" (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%DEPLOY_PS1%" -Force
-    if errorlevel 1 echo Redeploy failed - running whatever is already in this folder instead.
-) else (
-    echo Source repo not found at "%DEPLOY_PS1%" - running existing copy without redeploying.
-)
-goto launch
-:run
-if exist "%~dp0unstuck.ps1" goto launch
-echo  Nothing is deployed yet - deploying first.
-goto deploy
-:launch
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0unstuck.ps1" %*
-"@
-    Write-BatIfChanged $bat $deployBat
-    # run.bat replaces the old generated deploy.bat.
-    $oldBat = Join-Path $out 'deploy.bat'
-    if (Test-Path $oldBat) { Remove-Item $oldBat -Force -ErrorAction SilentlyContinue }
-}
-
-New-Item -ItemType Directory -Force -Path $out | Out-Null
-
-if ($LauncherOnly) {
-    Write-Launcher
-    Write-Host "  Wrote $bat" -ForegroundColor Green
-    exit 0
-}
-
-if (-not $Force -and -not (Test-NeedsDeploy)) {
-    Write-Host '  Unstuck is up to date - nothing to deploy.' -ForegroundColor DarkGray
-} else {
-    Write-Host "  Deploying Unstuck -> $out" -ForegroundColor Cyan
-    Copy-Item -LiteralPath $srcScript -Destination $deployScript -Force
-    if (Test-Path $srcIcon) { Copy-Item -LiteralPath $srcIcon -Destination $deployIcon -Force }
-
-    Write-Host '  Deployed successfully.' -ForegroundColor Green
-    Write-Host "    Script : $deployScript" -ForegroundColor Gray
-    Write-Host "    Launch : $bat" -ForegroundColor Gray
-}
-Write-Launcher
-
-$failed = $false
-if (-not (Test-TaskbarNeedsPublish)) {
-    Write-Host '  UnstuckTaskbar is up to date - nothing to publish.' -ForegroundColor DarkGray
-} else {
-    # The running tray app locks its exe; stop it, and start it again afterwards so a redeploy
-    # (which run.bat's Deploy & Run triggers) doesn't leave the hotkey dead until next logon.
-    # Only this desktop session's copy is stopped: another signed-in user's tray app is never
-    # killed. If one still holds the exe lock, the publish is skipped and reported instead.
-    $mySession = (Get-Process -Id $PID).SessionId
-    $allTray   = @(Get-Process 'UnstuckTaskbar' -ErrorAction SilentlyContinue)
-    $mine      = @($allTray | Where-Object { $_.SessionId -eq $mySession })
-    $others    = @($allTray | Where-Object { $_.SessionId -ne $mySession })
-    if ($others.Count -gt 0) {
-        # Leave this session's copy running too: the exe can't be replaced anyway.
-        $sessions = ($others | ForEach-Object SessionId | Sort-Object -Unique) -join ', '
-        Write-Host "  UnstuckTaskbar is running in another session ($sessions) and locks $taskbarExe - not stopping it; publish skipped. Close it there, then redeploy." -ForegroundColor Yellow
-        $failed = $true
-    } else {
-        $wasRunning = $mine.Count -gt 0
-        $mine | Stop-Process -Force -ErrorAction SilentlyContinue
-        Write-Host "  Publishing UnstuckTaskbar -> $taskbarExe" -ForegroundColor Cyan
-        dotnet publish $taskbarProj `
-            --configuration Release `
-            --runtime win-x64 `
-            --self-contained false `
-            /p:PublishSingleFile=true `
-            /p:IncludeNativeLibrariesForSelfExtract=true `
-            --output $out | Out-Host
-        if ($LASTEXITCODE -ne 0 -or -not (Test-Path $taskbarExe)) {
-            Write-Host 'Publishing UnstuckTaskbar FAILED.' -ForegroundColor Red
-            $failed = $true
-        } else {
-            Write-Host "  Published $taskbarExe" -ForegroundColor Green
-        }
-        if (Test-Path $taskbarExe) {
-            # Seeds first-run defaults and writes settings.manifest.json so MindAttic Vault shows this app's tab.
-            & $taskbarExe --write-settings-manifest | Out-Null
-        }
-        if ($wasRunning -and (Test-Path $taskbarExe)) { Start-Process -FilePath $taskbarExe -WorkingDirectory $out }
+$trayState = @{ Restart = $false }
+$Override = @{
+    Exe       = 'UnstuckTaskbar.exe'
+    Plan      = @{ Kind = 'dotnet'; Projects = @("$PSScriptRoot\UnstuckTaskbar\UnstuckTaskbar.csproj") }
+    PreBuild  = {
+        param($Config, $Out)
+        if ($Config -ne 'Release') { return }
+        $target = $Out -replace '\.staging$', ''
+        $mySession = (Get-Process -Id $PID).SessionId
+        $trayState.Restart = [bool](Get-Process 'UnstuckTaskbar' -ErrorAction SilentlyContinue |
+            Where-Object { $_.SessionId -eq $mySession -and $_.Path -and $_.Path.StartsWith($target + '\', [StringComparison]::OrdinalIgnoreCase) })
+    }
+    PostBuild = {
+        param($Config, $Out)
+        Copy-Item -LiteralPath "$PSScriptRoot\unstuck.ps1", "$PSScriptRoot\unstuck.bat", "$PSScriptRoot\assets\logo.ico" -Destination $Out -Force
+        Copy-Item -LiteralPath "$PSScriptRoot\commands" -Destination $Out -Recurse -Force
+        $exe = Join-Path $Out 'UnstuckTaskbar.exe'
+        if ($Config -ne 'Release' -or -not (Test-Path -LiteralPath $exe)) { return }
+        # Seeds first-run defaults and writes settings.manifest.json so MindAttic Vault shows this app's tab.
+        & $exe --write-settings-manifest | Out-Null
+        if ($trayState.Restart) { Start-Process -FilePath $exe -WorkingDirectory $Out }
     }
 }
 
-if ($Launch) {
-    if (-not (Test-Path $deployScript)) {
-        Write-Host "Nothing deployed at $deployScript." -ForegroundColor Red
-        exit 1
+function Find-DeployLib {
+    if ($env:MINDATTIC_DEPLOY_LIB -and (Test-Path -LiteralPath $env:MINDATTIC_DEPLOY_LIB)) { return $env:MINDATTIC_DEPLOY_LIB }
+    $roots = @()
+    $d = $PSScriptRoot
+    while ($d) { $roots += $d; $d = Split-Path -Parent $d }
+    $roots += 'D:\Projects\MindAttic'
+    foreach ($r in $roots) {
+        foreach ($rel in 'MindAttic.Agency\shared\deploy-lib.ps1', 'mindattic-agent-standard\shared\deploy-lib.ps1') {
+            $p = Join-Path $r $rel
+            if (Test-Path -LiteralPath $p) { return $p }
+        }
     }
-    Write-Host '  Running...' -ForegroundColor Cyan
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $deployScript @LaunchArgs
+    throw 'deploy-lib.ps1 not found: clone MindAttic.Agency beside this repo, or set MINDATTIC_DEPLOY_LIB to its path.'
 }
-if ($failed) { exit 1 }
-exit 0
+
+. (Find-DeployLib)
+Invoke-AppRun -Repo $PSScriptRoot -Redeploy:$Redeploy -RunDebug:$RunDebug -RunRelease:$RunRelease -DryRun:$DryRun `
+    -AppArgs $AppArgs -Override $Override

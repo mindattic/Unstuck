@@ -57,3 +57,9 @@ _Nothing recorded yet._
 | UNS-T34 | 2026-11-18 | feature | closed | Tray icon's right-click menu gains 'Set Alternate Hotkey...' (live key capture) and 'Clear Alternate Hotkey', instead of only via Vault Desktop Settings' typed gesture string | — |
 | UNS-T35 | 2026-11-18 | feature | closed | Ctrl+Alt+U becomes a second permanent, hardcoded hotkey (like Ctrl+Alt+Break), independent of the user's one configurable extra-hotkey slot | — |
 | UNS-T36 | 2026-11-19 | feature | closed | Inno Setup installer (Unstuck-Setup-vN.exe) like Bananarama: per-user, startup/desktop tasks, Apps & Features uninstall, whole-number release script | setup/Unstuck.iss; verified silent install/uninstall; release v3 |
+| UNS-T37 | 2026-11-24 | fix | wont-do | Hunt the whole repo for real bugs with no time limit and fix every confirmed one | portfolio reset: generic bughunt sweep |
+| UNS-T38 | 2026-11-26 | feature | open | Repoint the remaining C:\Apps\Unstuck mentions to R:\MindAttic\Apps\Unstuck: docs/tray-app.md (paths table) and UnstuckTaskbar/Recovery/UnstuckRunner.cs (doc comment); the run menu itself already landed in 1322fbb (MAT-T303). Outcome: no file outside artifacts/ names C:\Apps\Unstuck | — |
+| UNS-T39 | 2026-11-26 | chore | open | Delete the old C:\Apps\Unstuck install now that R:\MindAttic\Apps\Unstuck runs from both Debug and Release. Outcome: the folder is gone | — |
+| UNS-T40 | 2026-11-27 | feature | open | Unstuck runs only from R:; no C: path or folder left | — |
+| UNS-T41 | 2026-11-27 | feature | open | Code and docs name R:\MindAttic\Apps\Unstuck, not C:\Apps\Unstuck | — |
+| UNS-T42 | 2026-11-27 | feature | open | The old C:\Apps\Unstuck folder is deleted | — |
